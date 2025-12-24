@@ -43,6 +43,17 @@ type EmbeddingRequest struct {
 	EncodingFormat EmbeddingEncodingFormat `json:"encoding_format,omitempty"`
 }
 
+func NewEmbeddingRequest(model string, texts []string, opts ...EmbeddingRequestOption) *EmbeddingRequest {
+	r := &EmbeddingRequest{
+		Model: model,
+		Input: texts,
+	}
+	for _, opt := range opts {
+		opt(r)
+	}
+	return r
+}
+
 type EmbeddingData struct {
 	Object    string          `json:"object"`
 	Embedding EmbeddingVector `json:"embedding"`
@@ -66,70 +77,44 @@ func (r *EmbeddingResponse) Embeddings() []EmbeddingVector {
 	return vectors
 }
 
-type EmbeddingOptions struct {
-	OutputType EmbeddingOutputDtype
-	OutputDim  int
-	Encoding   EmbeddingEncodingFormat
-}
+type EmbeddingRequestOption func(request *EmbeddingRequest)
 
-type EmbeddingOption func(*EmbeddingOptions)
-
-func WithEmbeddingOutputDtype(dtype EmbeddingOutputDtype) EmbeddingOption {
-	return func(opts *EmbeddingOptions) {
-		opts.OutputType = dtype
+func WithEmbeddingOutputDtype(dtype EmbeddingOutputDtype) EmbeddingRequestOption {
+	return func(req *EmbeddingRequest) {
+		req.OutputDtype = dtype
 	}
 }
 
-func WithEmbeddingOutputDimension(dim int) EmbeddingOption {
-	return func(opts *EmbeddingOptions) {
-		opts.OutputDim = dim
+func WithEmbeddingOutputDimension(dim int) EmbeddingRequestOption {
+	return func(req *EmbeddingRequest) {
+		req.OutputDimension = dim
 	}
 }
 
-func WithEmbeddingEncodingFormat(encoding EmbeddingEncodingFormat) EmbeddingOption {
-	return func(opts *EmbeddingOptions) {
-		opts.Encoding = encoding
+func WithEmbeddingEncodingFormat(encoding EmbeddingEncodingFormat) EmbeddingRequestOption {
+	return func(req *EmbeddingRequest) {
+		req.EncodingFormat = encoding
 	}
 }
 
-func (c *clientImpl) Embeddings(ctx context.Context, texts []string, model string, opts ...EmbeddingOption) (*EmbeddingResponse, error) {
+func (c *clientImpl) Embeddings(ctx context.Context, req *EmbeddingRequest) (*EmbeddingResponse, error) {
 	c.rateLimiter.Wait()
-
-	embCfg := &EmbeddingOptions{}
-	for _, opt := range opts {
-		opt(embCfg)
-	}
 
 	url := fmt.Sprintf("%s/v1/embeddings", c.baseURL)
 
-	reqBody := EmbeddingRequest{
-		Input: texts,
-		Model: model,
-	}
-
-	if embCfg.OutputDim > 0 {
-		reqBody.OutputDimension = embCfg.OutputDim
-	}
-	if embCfg.OutputType != "" {
-		reqBody.OutputDtype = embCfg.OutputType
-	}
-	if embCfg.Encoding != "" {
-		reqBody.EncodingFormat = embCfg.Encoding
-	}
-
-	jsonValue, err := json.Marshal(reqBody)
+	jsonValue, err := json.Marshal(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request body: %w", err)
+		return nil, fmt.Errorf("failed to marshal req body: %w", err)
 	}
 
-	response, lat, err := sendRequest(ctx, c, http.MethodPost, url, jsonValue)
+	response, lat, err := c.sendRequest(ctx, http.MethodPost, url, jsonValue)
 	if err != nil {
 		return nil, err
 	}
 	defer response.Body.Close()
 
 	if c.verbose {
-		logger.Println("Embeddings called")
+		logger.Println("POST /v1/embeddings called")
 	}
 
 	var resp EmbeddingResponse

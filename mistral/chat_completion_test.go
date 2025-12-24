@@ -132,7 +132,7 @@ func TestChatCompletion(t *testing.T) {
 				"mistral-small-latest",
 				inputMsgs,
 				mistral.WithTools([]mistral.Tool{
-					mistral.NewFuncTool("add", "add two numbers", map[string]any{
+					mistral.NewTool("add", "add two numbers", map[string]any{
 						"type": "object",
 						"properties": map[string]any{
 							"a": map[string]any{
@@ -143,7 +143,7 @@ func TestChatCompletion(t *testing.T) {
 							},
 						},
 					}),
-					mistral.NewFuncTool("getUserById", "get user by id", map[string]any{
+					mistral.NewTool("getUserById", "get user by id", map[string]any{
 						"type": "object",
 						"properties": map[string]any{
 							"id": map[string]any{
@@ -304,25 +304,29 @@ func TestChatCompletion(t *testing.T) {
 		_, err := c.ChatCompletion(ctx, mistral.NewChatCompletionRequest("mistral-large", inputMsgs))
 
 		// Then
-		expectedErr := &mistral.ErrorResponse{
-			Object: "error",
-			Message: mistral.ErrorResponseMessage{
-				Detail: []mistral.ErrorResponseDetail{
-					{
-						Type:  "extra_forbidden",
-						Loc:   []string{"body", "parallel_tool_callss"},
-						Msg:   "Extra inputs are not permitted",
-						Input: true,
+		expectedErr := mistral.ApiError{
+			Code: http.StatusBadRequest,
+			Content: map[string]any{
+				"object": "error",
+				"message": map[string]any{
+					"detail": []any{
+						map[string]any{
+							"type":  "extra_forbidden",
+							"loc":   []any{"body", "parallel_tool_callss"},
+							"msg":   "Extra inputs are not permitted",
+							"input": true,
+						},
 					},
 				},
+				"type":  "invalid_request_error",
+				"param": nil,
+				"code":  nil,
 			},
-			Type:  "invalid_request_error",
-			Param: nil,
-			Code:  nil,
 		}
 		assert.Error(t, err)
-		assert.Equal(t, expectedErr, err)
+		assert.Equal(t, &expectedErr, err)
 		assert.Equal(t, int32(1), atomic.LoadInt32(&attempts))
+		assert.Equal(t, "[400] invalid_request_error: extra_forbidden: Extra inputs are not permitted (body.parallel_tool_callss)", err.Error())
 	})
 
 	t.Run("Should retry on timeout error then succeed", func(t *testing.T) {

@@ -1,88 +1,105 @@
 package mistral
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 )
 
-type ErrorResponseDetail struct {
-	Type  string   `json:"type"`
-	Loc   []string `json:"loc"`
-	Msg   string   `json:"msg"`
-	Input bool     `json:"input"`
+type ApiError struct {
+	Code    int
+	Content map[string]any
 }
 
-type ErrorResponseMessage struct {
-	Detail []ErrorResponseDetail `json:"detail"`
-}
-
-type ErrorResponse struct {
-	Object  string               `json:"object"`
-	Message ErrorResponseMessage `json:"message"`
-	Type    string               `json:"type"`
-	Param   interface{}          `json:"param"`
-	Code    interface{}          `json:"code"`
-}
-
-var _ error = (*ErrorResponse)(nil)
-var _ json.Unmarshaler = (*ErrorResponse)(nil)
-
-func (e *ErrorResponse) UnmarshalJSON(data []byte) error {
-	var value map[string]any
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	if value == nil {
-		return nil
-	}
-	e.Object = value["object"].(string)
-	e.Type = value["type"].(string)
-	e.Param = value["param"]
-	e.Code = value["code"]
-
-	rawMsg := value["message"]
-	if rawMsg == nil {
-		return nil
-	}
-
-	if val, ok := rawMsg.(string); ok {
-		e.Message.Detail = append(e.Message.Detail, ErrorResponseDetail{Msg: val})
-	} else if val, ok := rawMsg.(map[string]any); ok {
-		var errMsg ErrorResponseMessage
-		if err := mapToStruct(val, &errMsg); err != nil {
-			return err
-		}
-		e.Message = errMsg
-	} else {
-		return fmt.Errorf("unexpected error response message format: %v", value)
-	}
-	return nil
-}
-
-func (e *ErrorResponse) Error() string {
+func (e *ApiError) Error() string {
 	msg := strings.Builder{}
-	msg.WriteString(e.Type)
-
-	if len(e.Message.Detail) == 0 {
-		return msg.String()
+	if e.Code > 0 {
+		fmt.Fprintf(&msg, "[%d] ", e.Code)
 	}
 
-	msg.WriteString(":")
-	for i, detail := range e.Message.Detail {
-		msg.WriteString(" ")
-		if detail.Type != "" {
-			msg.WriteString(detail.Type)
+	if e.Content == nil {
+		return strings.TrimSpace(msg.String())
+	}
+
+	// Extract error type
+	errType, _ := e.Content["type"].(string)
+
+	var details []string
+
+	// Check "message" field which can be a string or an object containing details
+	if rawMsg, ok := e.Content["message"]; ok {
+		if m, ok := rawMsg.(string); ok {
+			details = append(details, m)
+		} else if m, ok := rawMsg.(map[string]any); ok {
+			if rawDetail, ok := m["detail"]; ok {
+				details = append(details, extractApiErrorDetails(rawDetail)...)
+			}
+		}
+	} else if detail, ok := e.Content["detail"].(string); ok {
+		// Case for 401 Unauthorized: {"detail": "Unauthorized"}
+		details = append(details, detail)
+	}
+
+	if errType != "" {
+		msg.WriteString(errType)
+		if len(details) > 0 {
 			msg.WriteString(": ")
 		}
-		msg.WriteString(detail.Msg)
-		if len(detail.Loc) > 0 {
-			msg.WriteString(" ")
-			msg.WriteString("(" + strings.Join(detail.Loc, ".") + ")")
+	}
+
+	if len(details) > 0 {
+		msg.WriteString(strings.Join(details, "; "))
+	}
+
+	return strings.TrimSpace(msg.String())
+}
+
+func extractApiErrorDetails(raw any) []string {
+	var details []string
+	switch v := raw.(type) {
+	case []any:
+		for _, d := range v {
+			if dm, ok := d.(map[string]any); ok {
+				details = append(details, formatApiErrorDetail(dm))
+			}
 		}
-		if i < len(e.Message.Detail)-1 {
-			msg.WriteString(";")
+	case []map[string]any:
+		for _, dm := range v {
+			details = append(details, formatApiErrorDetail(dm))
 		}
 	}
-	return msg.String()
+	return details
+}
+
+func formatApiErrorDetail(d map[string]any) string {
+	var sb strings.Builder
+
+	t, _ := d["type"].(string)
+	m, _ := d["msg"].(string)
+
+	if t != "" {
+		sb.WriteString(t)
+		sb.WriteString(": ")
+	}
+	sb.WriteString(m)
+
+	if locRaw, ok := d["loc"]; ok {
+		var locParts []string
+		switch lv := locRaw.(type) {
+		case []any:
+			for _, l := range lv {
+				if s, ok := l.(string); ok {
+					locParts = append(locParts, s)
+				}
+			}
+		case []string:
+			locParts = lv
+		}
+		if len(locParts) > 0 {
+			sb.WriteString(" (")
+			sb.WriteString(strings.Join(locParts, "."))
+			sb.WriteString(")")
+		}
+	}
+
+	return sb.String()
 }

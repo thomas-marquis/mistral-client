@@ -36,21 +36,22 @@ type ChatCompletionRequest struct {
 
 	// ResponseFormat specifies the format that the model must output.
 	//
-	// By default, it will use \{ "type": "text" \}.
-	// Setting to \{ "type": "json_object" \} enables JSON mode, which guarantees the message the model generates is in JSON.
+	// By default, it will use ResponseFormat.Type = ResponseFormatText.
+	// Setting to ResponseFormat.Type = ResponseFormatJsonObject enables JSON mode, which guarantees the message the model generates is in JSON.
 	// When using JSON mode you MUST also instruct the model to produce JSON yourself with a system or a user message.
-	// Setting to \{ "type": "json_schema" \} enables JSON schema mode, which guarantees the message the model generates is in JSON and follows the schema you provide.
+	// Setting to ResponseFormat.Type = ResponseFormatJsonSchema enables JSON schema mode, which guarantees the message the model generates is in JSON and follows the schema you provide.
+	// Prefer using the options builder WithResponseTextFormat, WithResponseJsonSchema, WithResponseJsonObjectFormat instead of setting this field directly.
 	ResponseFormat *ResponseFormat `json:"response_format,omitempty"`
 
 	Tools []Tool `json:"tools,omitempty"`
 
 	// ToolChoice controls which (if any) tool is called by the model.
 	//
-	// "none" means the model will not call any tool and instead generates a message.
+	// ToolChoiceNone means the model will not call any tool and instead generates a message.
 	//
-	// "auto" means the model can pick between generating a message or calling one or more tools.
+	// ToolChoiceAuto means the model can pick between generating a message or calling one or more tools.
 	//
-	// "any" or required means the model must call one or more tools.
+	// ToolChoiceAny or required means the model must call one or more tools.
 	//
 	// Specifying a particular tool via \{"type": "function", "function": \{"name": "my_function"\}\} forces the model to call that tool.
 	// You can marshal a ToolChoice object directly into this field.
@@ -87,9 +88,9 @@ type ChatCompletionRequest struct {
 	Stream bool `json:"stream,omitempty"`
 }
 
-type ChatCompletionOption func(request *ChatCompletionRequest)
+type ChatCompletionRequestOption func(request *ChatCompletionRequest)
 
-func NewChatCompletionRequest(model string, messages []ChatMessage, opts ...ChatCompletionOption) *ChatCompletionRequest {
+func NewChatCompletionRequest(model string, messages []ChatMessage, opts ...ChatCompletionRequestOption) *ChatCompletionRequest {
 	r := &ChatCompletionRequest{
 		Messages:          messages,
 		Model:             model,
@@ -130,6 +131,24 @@ func (r *ChatCompletionResponse) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// AssistantMessage returns the first assistant message in the response choices, or nil if there are no assistant messages.
+func (r *ChatCompletionResponse) AssistantMessage() *AssistantMessage {
+	if len(r.Choices) == 0 {
+		logger.Printf("No choices found in response")
+		return nil
+	}
+	msg := r.Choices[0].Message
+	if msg == nil {
+		logger.Printf("Message is nil")
+		return nil
+	}
+	if msg.Role != RoleAssistant {
+		logger.Printf("Message is not an assistant message: %+v", msg)
+		return nil
+	}
+	return msg
+}
+
 type ChatCompletionChoice struct {
 	FinishReason FinishReason      `json:"finish_reason"`
 	Index        int               `json:"index"`
@@ -161,7 +180,7 @@ type ResponseFormat struct {
 
 // WithResponseTextFormat ensures the response is formatted as text.
 // This is the default format if none is specified.
-func WithResponseTextFormat() ChatCompletionOption {
+func WithResponseTextFormat() ChatCompletionRequestOption {
 	return func(req *ChatCompletionRequest) {
 		req.ResponseFormat = &ResponseFormat{Type: ResponseFormatText, JsonSchema: nil}
 	}
@@ -169,7 +188,7 @@ func WithResponseTextFormat() ChatCompletionOption {
 
 // WithResponseJsonSchema ensures the response is formatted according to the specified JSON schema.
 // You MUST also instruct the model to produce JSON yourself with a system or a user message.
-func WithResponseJsonSchema(schema any) ChatCompletionOption {
+func WithResponseJsonSchema(schema any) ChatCompletionRequestOption {
 	return func(req *ChatCompletionRequest) {
 		req.ResponseFormat = &ResponseFormat{
 			Type: ResponseFormatJsonSchema,
@@ -184,14 +203,14 @@ func WithResponseJsonSchema(schema any) ChatCompletionOption {
 
 // WithResponseJsonObjectFormat ensures the response is formatted as a JSON object.
 // You MUST also instruct the model to produce JSON yourself with a system or a user message.
-func WithResponseJsonObjectFormat() ChatCompletionOption {
+func WithResponseJsonObjectFormat() ChatCompletionRequestOption {
 	return func(req *ChatCompletionRequest) {
 		req.ResponseFormat = &ResponseFormat{Type: ResponseFormatJsonObject, JsonSchema: nil}
 	}
 }
 
 // WithTools enables the model to call the specified tools.
-func WithTools(tools []Tool) ChatCompletionOption {
+func WithTools(tools []Tool) ChatCompletionRequestOption {
 	return func(req *ChatCompletionRequest) {
 		req.Tools = tools
 		req.ToolChoice = ToolChoiceAuto
@@ -199,7 +218,7 @@ func WithTools(tools []Tool) ChatCompletionOption {
 }
 
 // WithToolChoice controls which (if any) tool is called by the model.
-func WithToolChoice(toolChoice ToolChoiceType) ChatCompletionOption {
+func WithToolChoice(toolChoice ToolChoiceType) ChatCompletionRequestOption {
 	return func(req *ChatCompletionRequest) {
 		req.ToolChoice = toolChoice
 	}
@@ -225,14 +244,14 @@ func (c *clientImpl) ChatCompletion(
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	response, lat, err := sendRequest(ctx, c, http.MethodPost, url, jsonValue)
+	response, lat, err := c.sendRequest(ctx, http.MethodPost, url, jsonValue)
 	if err != nil {
 		return nil, err
 	}
 	defer response.Body.Close()
 
 	if c.verbose {
-		logger.Printf("ChatCompletion called")
+		logger.Printf("POST /v1/chat/completions called")
 	}
 
 	var resp ChatCompletionResponse

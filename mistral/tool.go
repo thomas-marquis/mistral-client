@@ -53,7 +53,7 @@ type Tool struct {
 	Function Function `json:"function"`
 }
 
-func NewFuncTool(functionName, description string, parameters map[string]any) Tool {
+func NewTool(functionName, description string, parameters map[string]any) Tool {
 	return Tool{
 		Type: "function",
 		Function: Function{

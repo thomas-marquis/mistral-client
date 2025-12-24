@@ -42,7 +42,7 @@ func TestEmbeddings(t *testing.T) {
 		c := mistral.New("fakeApiKey", mistral.WithBaseAPIURL(mockServer.URL))
 
 		// When
-		res, err := c.Embeddings(ctx, []string{"ipsum eiusmod"}, "mistral-embed")
+		res, err := c.Embeddings(ctx, mistral.NewEmbeddingRequest("mistral-embed", []string{"ipsum eiusmod"}))
 
 		// Then
 		assert.NoError(t, err)
@@ -90,11 +90,11 @@ func TestEmbeddings(t *testing.T) {
 		c := mistral.New("fakeApiKey", mistral.WithBaseAPIURL(mockServer.URL))
 
 		// When
-		res, err := c.Embeddings(ctx, []string{"ipsum eiusmod"}, "mistral-embed",
+		res, err := c.Embeddings(ctx, mistral.NewEmbeddingRequest("mistral-embed", []string{"ipsum eiusmod"},
 			mistral.WithEmbeddingEncodingFormat(mistral.EmbeddingEncodingBase64),
 			mistral.WithEmbeddingOutputDimension(2048),
 			mistral.WithEmbeddingOutputDtype(mistral.EmbeddingOutputDtypeInt8),
-		)
+		))
 
 		// Then
 		assert.NoError(t, err)
@@ -133,12 +133,12 @@ func TestEmbeddings(t *testing.T) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write([]byte(`{
-			"id":"emb-xyz",
-			"object":"list",
-			"model":"mistral-embed",
-			"usage":{"prompt_tokens":0,"total_tokens":0},
-			"data":[{"object":"embedding","index":0,"embedding":[0.1,0.2,0.3]}]
-		}`))
+				"id":"emb-xyz",
+				"object":"list",
+				"model":"mistral-embed",
+				"usage":{"prompt_tokens":0,"total_tokens":0},
+				"data":[{"object":"embedding","index":0,"embedding":[0.1,0.2,0.3]}]
+			}`))
 		}))
 		defer srv.Close()
 
@@ -154,7 +154,7 @@ func TestEmbeddings(t *testing.T) {
 		ctx := context.Background()
 
 		// When
-		res, err := c.Embeddings(ctx, []string{"hello"}, "mistral-embed")
+		res, err := c.Embeddings(ctx, mistral.NewEmbeddingRequest("mistral-embed", []string{"hello"}))
 
 		// Then
 		assert.NoError(t, err, "expected no error")

@@ -14,13 +14,23 @@ import (
 )
 
 const (
-	mistralBaseAPIURL = "https://api.mistral.ai"
-	defaultTimeout    = 5 * time.Second
+	BaseApiUrl     = "https://api.mistral.ai"
+	defaultTimeout = 5 * time.Second
 )
 
 type Client interface {
-	Embeddings(ctx context.Context, texts []string, model string, opts ...EmbeddingOption) (*EmbeddingResponse, error)
+	// Embeddings calls the /v1/embeddings endpoint
+	Embeddings(ctx context.Context, req *EmbeddingRequest) (*EmbeddingResponse, error)
+
+	// ChatCompletion calls the /v1/chat/completions endpoint
 	ChatCompletion(ctx context.Context, req *ChatCompletionRequest) (*ChatCompletionResponse, error)
+
+	// ListModels lists all models available to the user.
+	ListModels(ctx context.Context) ([]*BaseModelCard, error)
+
+	// SearchModels searches for models that match the specified capabilities.
+	// The returned models match at least all the specified capabilities.
+	SearchModels(ctx context.Context, capabilities *ModelCapabilities) ([]*BaseModelCard, error)
 }
 
 type clientImpl struct {
@@ -43,7 +53,7 @@ func New(apiKey string, opts ...Option) Client {
 func NewWithConfig(apiKey string, cfg *Config) Client {
 	c := &clientImpl{
 		apiKey:      apiKey,
-		baseURL:     mistralBaseAPIURL,
+		baseURL:     BaseApiUrl,
 		rateLimiter: NewNoneRateLimiter(),
 		httpClient: &http.Client{
 			Timeout:   defaultTimeout,
@@ -141,7 +151,7 @@ func unmarshallBody(resp *http.Response, v interface{}) error {
 	return err
 }
 
-func sendRequest(ctx context.Context, c *clientImpl, method, url string, body []byte) (*http.Response, time.Duration, error) {
+func (c *clientImpl) sendRequest(ctx context.Context, method, url string, body []byte) (*http.Response, time.Duration, error) {
 	// attempt = 0 is the first try; we perform up to (1 + retryMaxRetries) attempts total.
 	for attempt := 0; attempt <= c.retryMaxRetries; attempt++ {
 		req, err := http.NewRequestWithContext(ctx, method, url, bytes.NewReader(body))
@@ -173,14 +183,6 @@ func sendRequest(ctx context.Context, c *clientImpl, method, url string, body []
 			return nil, 0, fmt.Errorf("failed to make HTTP request: %w", err)
 		}
 
-		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
-			var errResponse ErrorResponse
-			if err := unmarshallBody(resp, &errResponse); err != nil {
-				return nil, 0, fmt.Errorf("failed to unmarshal error response: %w", err)
-			}
-			return nil, 0, &errResponse
-		}
-
 		if resp.StatusCode != http.StatusOK {
 			if attempt < c.retryMaxRetries {
 				if _, ok := c.retryStatusCodes[resp.StatusCode]; ok {
@@ -201,6 +203,15 @@ func sendRequest(ctx context.Context, c *clientImpl, method, url string, body []
 					}
 				}
 			}
+
+			if resp.StatusCode >= 400 && resp.StatusCode < 500 {
+				var content map[string]any
+				if err := unmarshallBody(resp, &content); err != nil {
+					return nil, 0, &ApiError{Code: resp.StatusCode}
+				}
+				return nil, 0, &ApiError{Code: resp.StatusCode, Content: content}
+			}
+
 			errResponseBody, _ := io.ReadAll(resp.Body)
 			return nil, 0, fmt.Errorf("HTTP request failed with status %s and body '%s'",
 				resp.Status, string(errResponseBody))
