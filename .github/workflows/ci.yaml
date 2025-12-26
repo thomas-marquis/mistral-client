@@ -30,11 +30,6 @@ jobs:
           go-version: '1.25.x'
           cache: true
 
-      - name: Go env
-        run: |
-          go env
-        shell: bash
-
       - name: Download modules
         run: go mod download
 
@@ -43,7 +38,6 @@ jobs:
         with:
           args: >
             --timeout=5m
-            --out-format=colored-line-number
             ./...
 
       - name: Format check (gofmt)
