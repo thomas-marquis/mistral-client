@@ -98,7 +98,11 @@ func WithEmbeddingEncodingFormat(encoding EmbeddingEncodingFormat) EmbeddingRequ
 }
 
 func (c *clientImpl) Embeddings(ctx context.Context, req *EmbeddingRequest) (*EmbeddingResponse, error) {
-	c.rateLimiter.Wait()
+	if c.limiter != nil {
+		if err := c.limiter.Wait(ctx); err != nil {
+			return nil, err
+		}
+	}
 
 	url := fmt.Sprintf("%s/v1/embeddings", c.baseURL)
 

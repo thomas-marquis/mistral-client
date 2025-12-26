@@ -43,7 +43,7 @@ func TestChatCompletion(t *testing.T) {
 
 		// Given
 		ctx := context.TODO()
-		c := mistral.New("fakeApiKey", mistral.WithBaseAPIURL(mockServer.URL))
+		c := mistral.New("fakeApiKey", mistral.WithBaseApiUrl(mockServer.URL))
 		inputMsgs := []mistral.ChatMessage{
 			mistral.NewSystemMessageFromString("You are a helpful assistant."),
 			mistral.NewUserMessageFromString("Hello!"),
@@ -120,7 +120,7 @@ func TestChatCompletion(t *testing.T) {
 
 		// Given
 		ctx := context.TODO()
-		c := mistral.New("fakeApiKey", mistral.WithBaseAPIURL(mockServer.URL))
+		c := mistral.New("fakeApiKey", mistral.WithBaseApiUrl(mockServer.URL))
 		inputMsgs := []mistral.ChatMessage{
 			mistral.NewSystemMessageFromString("You are a helpful assistant."),
 			mistral.NewUserMessageFromString("2 + 3?"),
@@ -304,9 +304,9 @@ func TestChatCompletion(t *testing.T) {
 		_, err := c.ChatCompletion(ctx, mistral.NewChatCompletionRequest("mistral-large", inputMsgs))
 
 		// Then
-		expectedErr := mistral.ApiError{
-			Code: http.StatusBadRequest,
-			Content: map[string]any{
+		expectedErr := mistral.NewApiError(
+			http.StatusBadRequest,
+			map[string]any{
 				"object": "error",
 				"message": map[string]any{
 					"detail": []any{
@@ -322,7 +322,7 @@ func TestChatCompletion(t *testing.T) {
 				"param": nil,
 				"code":  nil,
 			},
-		}
+		)
 		assert.Error(t, err)
 		assert.Equal(t, &expectedErr, err)
 		assert.Equal(t, int32(1), atomic.LoadInt32(&attempts))

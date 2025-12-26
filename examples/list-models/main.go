@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/thomas-marquis/mistral-client/mistral"
 )
@@ -14,8 +13,7 @@ func main() {
 	if apiKey == "" {
 		panic("Please set MISTRAL_API_KEY environment variable")
 	}
-	client := mistral.New(apiKey,
-		mistral.WithClientTimeout(60*time.Second))
+	client := mistral.New(apiKey)
 
 	models, err := client.ListModels(context.Background())
 	if err != nil {
@@ -28,7 +26,8 @@ func main() {
 	}
 
 	filtered, err := client.SearchModels(context.Background(), &mistral.ModelCapabilities{
-		Moderation: true,
+		CompletionChat:  true,
+		FunctionCalling: true,
 	})
 	if err != nil {
 		panic(err)

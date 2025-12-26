@@ -5,28 +5,43 @@ import (
 	"strings"
 )
 
-type ApiError struct {
-	Code    int
-	Content map[string]any
+type ApiError interface {
+	error
+
+	// Code returns the HTTP status code
+	Code() int
+
+	// Content returns the original JSON response body or nil otherwise.
+	Content() map[string]any
 }
 
-func (e *ApiError) Error() string {
+type apiError struct {
+	code    int
+	content map[string]any
+}
+
+// NewApiError creates a new ApiError instance.
+func NewApiError(code int, content map[string]any) ApiError {
+	return &apiError{code: code, content: content}
+}
+
+func (e *apiError) Error() string {
 	msg := strings.Builder{}
-	if e.Code > 0 {
-		fmt.Fprintf(&msg, "[%d] ", e.Code)
+	if e.code > 0 {
+		fmt.Fprintf(&msg, "[%d] ", e.Code())
 	}
 
-	if e.Content == nil {
+	if e.content == nil {
 		return strings.TrimSpace(msg.String())
 	}
 
 	// Extract error type
-	errType, _ := e.Content["type"].(string)
+	errType, _ := e.content["type"].(string)
 
 	var details []string
 
 	// Check "message" field which can be a string or an object containing details
-	if rawMsg, ok := e.Content["message"]; ok {
+	if rawMsg, ok := e.content["message"]; ok {
 		if m, ok := rawMsg.(string); ok {
 			details = append(details, m)
 		} else if m, ok := rawMsg.(map[string]any); ok {
@@ -34,7 +49,7 @@ func (e *ApiError) Error() string {
 				details = append(details, extractApiErrorDetails(rawDetail)...)
 			}
 		}
-	} else if detail, ok := e.Content["detail"].(string); ok {
+	} else if detail, ok := e.content["detail"].(string); ok {
 		// Case for 401 Unauthorized: {"detail": "Unauthorized"}
 		details = append(details, detail)
 	}
@@ -51,6 +66,14 @@ func (e *ApiError) Error() string {
 	}
 
 	return strings.TrimSpace(msg.String())
+}
+
+func (e *apiError) Code() int {
+	return e.code
+}
+
+func (e *apiError) Content() map[string]any {
+	return e.content
 }
 
 func extractApiErrorDetails(raw any) []string {

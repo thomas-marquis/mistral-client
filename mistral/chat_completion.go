@@ -231,7 +231,11 @@ func (c *clientImpl) ChatCompletion(
 	ctx context.Context,
 	req *ChatCompletionRequest,
 ) (*ChatCompletionResponse, error) {
-	c.rateLimiter.Wait()
+	if c.limiter != nil {
+		if err := c.limiter.Wait(ctx); err != nil {
+			return nil, err
+		}
+	}
 
 	url := fmt.Sprintf("%s/v1/chat/completions", c.baseURL)
 

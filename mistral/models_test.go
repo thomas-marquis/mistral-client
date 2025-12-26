@@ -190,7 +190,7 @@ func TestClientImpl_SearchModelsByCapabilities(t *testing.T) {
 		defer mockServer.Close()
 
 		ctx := context.TODO()
-		c := mistral.New("fakeApiKey", mistral.WithBaseAPIURL(mockServer.URL))
+		c := mistral.New("fakeApiKey", mistral.WithBaseApiUrl(mockServer.URL))
 
 		// When
 		res, err := c.SearchModels(ctx, &mistral.ModelCapabilities{
@@ -213,7 +213,7 @@ func TestClientImpl_SearchModelsByCapabilities(t *testing.T) {
 		defer mockServer.Close()
 
 		ctx := context.TODO()
-		c := mistral.New("fakeApiKey", mistral.WithBaseAPIURL(mockServer.URL))
+		c := mistral.New("fakeApiKey", mistral.WithBaseApiUrl(mockServer.URL))
 
 		// When
 		res, err := c.SearchModels(ctx, &mistral.ModelCapabilities{

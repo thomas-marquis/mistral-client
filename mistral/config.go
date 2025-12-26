@@ -5,13 +5,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/thomas-marquis/mistral-client/internal"
+	"golang.org/x/time/rate"
 )
 
 type Config struct {
 	ClientTimeout     time.Duration
 	MistralAPIBaseURL string
-	RateLimiter       RateLimiter
+	RateLimiter       *rate.Limiter
 	ApiKey            string
 	Verbose           bool
 
@@ -43,21 +43,15 @@ func WithClientTimeout(timeout time.Duration) Option {
 	}
 }
 
-func WithBaseAPIURL(baseURL string) Option {
+func WithBaseApiUrl(baseURL string) Option {
 	return func(cfg *Config) {
 		cfg.MistralAPIBaseURL = strings.TrimSuffix(baseURL, "/")
 	}
 }
 
-func WithRateLimiter(rateLimiter RateLimiter) Option {
+func WithRateLimiter(rateLimiter *rate.Limiter) Option {
 	return func(cfg *Config) {
 		cfg.RateLimiter = rateLimiter
-	}
-}
-
-func WithAPIKey(apiKey string) Option {
-	return func(cfg *Config) {
-		cfg.ApiKey = apiKey
 	}
 }
 
@@ -90,25 +84,5 @@ func WithRetry(maxRetries int, waitMin, waitMax time.Duration) Option {
 func WithRetryStatusCodes(codes ...int) Option {
 	return func(cfg *Config) {
 		cfg.RetryStatusCodes = append([]int(nil), codes...)
-	}
-}
-
-type ModelConfig struct {
-	MaxOutputTokens int      `json:"maxOutputTokens,omitempty"`
-	StopSequences   []string `json:"stopSequences,omitempty"`
-	Temperature     float64  `json:"temperature,omitempty"`
-	TopK            int      `json:"topK,omitempty"`
-	TopP            float64  `json:"topP,omitempty"`
-	Version         string   `json:"version,omitempty"`
-}
-
-func NewModelConfigFromRaw(r map[string]any) *ModelConfig {
-	return &ModelConfig{
-		MaxOutputTokens: internal.GetOrZero[int](r, "maxOutputTokens"),
-		StopSequences:   internal.GetSliceOrNil[string](r, "stopSequences"),
-		Temperature:     internal.GetOrZero[float64](r, "temperature"),
-		TopK:            internal.GetOrZero[int](r, "topK"),
-		TopP:            internal.GetOrZero[float64](r, "topP"),
-		Version:         internal.GetOrZero[string](r, "version"),
 	}
 }

@@ -3,10 +3,15 @@ package mistral
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"time"
+)
+
+var (
+	ModelNotFoundErr = errors.New("model not found")
 )
 
 type ModelCapabilities struct {
@@ -90,4 +95,38 @@ func (c *clientImpl) SearchModels(ctx context.Context, capabilities *ModelCapabi
 		}
 	}
 	return filtered, nil
+}
+
+func (c *clientImpl) GetModel(ctx context.Context, modelId string) (*BaseModelCard, error) {
+	url := fmt.Sprintf("%s/v1/models/%s", c.baseURL, modelId)
+
+	resp, _, err := c.sendRequest(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		var apiErr ApiError
+		if ok := errors.As(err, &apiErr); ok && apiErr.Code() == http.StatusNotFound {
+			return nil, ModelNotFoundErr
+		}
+
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if c.verbose {
+		logger.Printf("GET /v1/models/%s called", modelId)
+	}
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, ModelNotFoundErr
+	}
+
+	var response *BaseModelCard
+	bodyContent, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal(bodyContent, &response); err != nil {
+		return nil, err
+	}
+
+	return response, nil
 }

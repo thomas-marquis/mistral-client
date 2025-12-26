@@ -11,9 +11,9 @@ import (
 
 func TestApiError(t *testing.T) {
 	t.Run("should format error message for ApiError", func(t *testing.T) {
-		err := mistral.ApiError{
-			Code: http.StatusBadRequest,
-			Content: map[string]any{
+		err := mistral.NewApiError(
+			http.StatusBadRequest,
+			map[string]any{
 				"object": "error",
 				"message": map[string]any{
 					"detail": []map[string]any{
@@ -29,26 +29,26 @@ func TestApiError(t *testing.T) {
 				"param": nil,
 				"code":  nil,
 			},
-		}
+		)
 
 		assert.Equal(t, "[400] invalid_request_error: extra_forbidden: Extra inputs are not permitted (body.parallel_tool_calls)", err.Error())
 	})
 
 	t.Run("should format simple error message for ApiError (401 case)", func(t *testing.T) {
-		err := mistral.ApiError{
-			Code: http.StatusUnauthorized,
-			Content: map[string]any{
+		err := mistral.NewApiError(
+			http.StatusUnauthorized,
+			map[string]any{
 				"detail": "Unauthorized",
 			},
-		}
+		)
 
 		assert.Equal(t, "[401] Unauthorized", err.Error())
 	})
 
 	t.Run("should format error message with multiple details", func(t *testing.T) {
-		err := mistral.ApiError{
-			Code: http.StatusBadRequest,
-			Content: map[string]any{
+		err := mistral.NewApiError(
+			http.StatusBadRequest,
+			map[string]any{
 				"object": "error",
 				"message": map[string]any{
 					"detail": []map[string]any{
@@ -70,7 +70,7 @@ func TestApiError(t *testing.T) {
 				"param": nil,
 				"code":  nil,
 			},
-		}
+		)
 
 		assert.Equal(t, "[400] invalid_request_error: extra_forbidden: Extra inputs are not permitted (body.parallel_tool_calls); missing_required: Missing required property: messages (body.messages)", err.Error())
 	})
@@ -108,10 +108,10 @@ func TestApiError(t *testing.T) {
 		var content map[string]any
 		assert.NoError(t, json.Unmarshal([]byte(j), &content))
 
-		err := mistral.ApiError{
-			Code:    http.StatusBadRequest,
-			Content: content,
-		}
+		err := mistral.NewApiError(
+			http.StatusBadRequest,
+			content,
+		)
 
 		assert.Equal(t, "[400] invalid_request_error: extra_forbidden: Extra inputs are not permitted (body.parallel_tool_calls); missing_required: Missing required property: messages (body.messages)", err.Error())
 	})
@@ -127,10 +127,10 @@ func TestApiError(t *testing.T) {
 		var content map[string]any
 		assert.NoError(t, json.Unmarshal([]byte(j), &content))
 
-		err := mistral.ApiError{
-			Code:    http.StatusBadRequest,
-			Content: content,
-		}
+		err := mistral.NewApiError(
+			http.StatusBadRequest,
+			content,
+		)
 
 		assert.Equal(t, "[400] invalid_request_invalid_args: This model does not support output_dimension.", err.Error())
 	})

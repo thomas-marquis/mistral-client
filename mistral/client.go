@@ -11,11 +11,13 @@ import (
 	"net"
 	"net/http"
 	"time"
+
+	"golang.org/x/time/rate"
 )
 
 const (
 	BaseApiUrl     = "https://api.mistral.ai"
-	defaultTimeout = 5 * time.Second
+	defaultTimeout = 30 * time.Second
 )
 
 type Client interface {
@@ -31,14 +33,18 @@ type Client interface {
 	// SearchModels searches for models that match the specified capabilities.
 	// The returned models match at least all the specified capabilities.
 	SearchModels(ctx context.Context, capabilities *ModelCapabilities) ([]*BaseModelCard, error)
+
+	// GetModel returns the model card corresponding to the specified ID or an error if it does not exist.
+	GetModel(ctx context.Context, modelId string) (*BaseModelCard, error)
 }
 
 type clientImpl struct {
-	apiKey      string
-	baseURL     string
-	rateLimiter RateLimiter
-	httpClient  *http.Client
-	verbose     bool
+	apiKey  string
+	baseURL string
+
+	limiter    *rate.Limiter
+	httpClient *http.Client
+	verbose    bool
 
 	retryMaxRetries  int
 	retryWaitMin     time.Duration
@@ -46,15 +52,21 @@ type clientImpl struct {
 	retryStatusCodes map[int]struct{}
 }
 
+// New create a new Client instance. Available options are:
+//   - WithClientTimeout
+//   - WithBaseApiUrl
+//   - WithRateLimiter
+//   - WithVerbose
+//   - WithRetry
+//   - WithRetryStatusCodes
 func New(apiKey string, opts ...Option) Client {
 	return NewWithConfig(apiKey, NewConfig(opts...))
 }
 
 func NewWithConfig(apiKey string, cfg *Config) Client {
 	c := &clientImpl{
-		apiKey:      apiKey,
-		baseURL:     BaseApiUrl,
-		rateLimiter: NewNoneRateLimiter(),
+		apiKey:  apiKey,
+		baseURL: BaseApiUrl,
 		httpClient: &http.Client{
 			Timeout:   defaultTimeout,
 			Transport: cfg.Transport,
@@ -70,7 +82,7 @@ func NewWithConfig(apiKey string, cfg *Config) Client {
 		c.baseURL = cfg.MistralAPIBaseURL
 	}
 	if cfg.RateLimiter != nil {
-		c.rateLimiter = cfg.RateLimiter
+		c.limiter = cfg.RateLimiter
 	}
 	if cfg.ClientTimeout > 0 {
 		c.httpClient.Timeout = cfg.ClientTimeout
@@ -207,9 +219,9 @@ func (c *clientImpl) sendRequest(ctx context.Context, method, url string, body [
 			if resp.StatusCode >= 400 && resp.StatusCode < 500 {
 				var content map[string]any
 				if err := unmarshallBody(resp, &content); err != nil {
-					return nil, 0, &ApiError{Code: resp.StatusCode}
+					return nil, 0, NewApiError(resp.StatusCode, nil)
 				}
-				return nil, 0, &ApiError{Code: resp.StatusCode, Content: content}
+				return nil, 0, NewApiError(resp.StatusCode, content)
 			}
 
 			errResponseBody, _ := io.ReadAll(resp.Body)

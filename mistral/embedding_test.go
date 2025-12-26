@@ -39,7 +39,7 @@ func TestEmbeddings(t *testing.T) {
 		defer mockServer.Close()
 
 		ctx := context.TODO()
-		c := mistral.New("fakeApiKey", mistral.WithBaseAPIURL(mockServer.URL))
+		c := mistral.New("fakeApiKey", mistral.WithBaseApiUrl(mockServer.URL))
 
 		// When
 		res, err := c.Embeddings(ctx, mistral.NewEmbeddingRequest("mistral-embed", []string{"ipsum eiusmod"}))
@@ -87,7 +87,7 @@ func TestEmbeddings(t *testing.T) {
 		defer mockServer.Close()
 
 		ctx := context.TODO()
-		c := mistral.New("fakeApiKey", mistral.WithBaseAPIURL(mockServer.URL))
+		c := mistral.New("fakeApiKey", mistral.WithBaseApiUrl(mockServer.URL))
 
 		// When
 		res, err := c.Embeddings(ctx, mistral.NewEmbeddingRequest("mistral-embed", []string{"ipsum eiusmod"},
