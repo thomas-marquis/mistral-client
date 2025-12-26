@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	ModelNotFoundErr = errors.New("model not found")
+	ErrModelNotFound = errors.New("model not found")
 )
 
 type ModelCapabilities struct {
@@ -64,7 +64,7 @@ func (c *clientImpl) ListModels(ctx context.Context) ([]*BaseModelCard, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	if c.verbose {
 		logger.Printf("GET /v1/models called")
@@ -104,19 +104,19 @@ func (c *clientImpl) GetModel(ctx context.Context, modelId string) (*BaseModelCa
 	if err != nil {
 		var apiErr ApiError
 		if ok := errors.As(err, &apiErr); ok && apiErr.Code() == http.StatusNotFound {
-			return nil, ModelNotFoundErr
+			return nil, ErrModelNotFound
 		}
 
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	if c.verbose {
 		logger.Printf("GET /v1/models/%s called", modelId)
 	}
 
 	if resp.StatusCode == http.StatusNotFound {
-		return nil, ModelNotFoundErr
+		return nil, ErrModelNotFound
 	}
 
 	var response *BaseModelCard

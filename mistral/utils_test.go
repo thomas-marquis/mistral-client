@@ -41,11 +41,3 @@ func TestJsonMap(t *testing.T) {
 		assert.Equal(t, mistral.JsonMap(nil), m)
 	})
 }
-
-func formatJSON(j string) string {
-	var out map[string]any
-	if err := json.Unmarshal([]byte(j), &out); err != nil {
-		return j
-	}
-	return j
-}

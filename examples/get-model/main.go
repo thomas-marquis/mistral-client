@@ -25,7 +25,7 @@ func main() {
 
 	_, err = client.GetModel(context.Background(), "model-not-found")
 	if err != nil {
-		if errors.Is(err, mistral.ModelNotFoundErr) {
+		if errors.Is(err, mistral.ErrModelNotFound) {
 			fmt.Println("Model not found")
 			return
 		}

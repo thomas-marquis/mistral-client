@@ -87,7 +87,7 @@ Get a model card by its name:
 
 ```go
 model, err := client.GetModel(context.Background(), "model-not-found")
-if err != nil && errors.Is(err, mistral.ModelNotFoundErr)  {
+if err != nil && errors.Is(err, mistral.ErrModelNotFound)  {
     fmt.Println("Model not found")
 }
 ```
@@ -98,4 +98,5 @@ if err != nil && errors.Is(err, mistral.ModelNotFoundErr)  {
 
 All contributions are welcome!
 
+- Use golangci-lint before commiting ([install it first](https://golangci-lint.run/docs/welcome/install/local/))
 - Open an issue or submit a PR

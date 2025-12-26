@@ -252,7 +252,7 @@ func (c *clientImpl) ChatCompletion(
 	if err != nil {
 		return nil, err
 	}
-	defer response.Body.Close()
+	defer response.Body.Close() //nolint:errcheck
 
 	if c.verbose {
 		logger.Printf("POST /v1/chat/completions called")
