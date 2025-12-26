@@ -1,14 +1,33 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"time"
 
 	"github.com/thomas-marquis/mistral-client/mistral"
 	"golang.org/x/time/rate"
 )
+
+type fakeRoundTripper struct {
+	Body []byte
+}
+
+func (t *fakeRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Status:     "200 OK",
+		Header:     make(http.Header),
+		Body:       io.NopCloser(bytes.NewReader(t.Body)),
+		Request:    req,
+	}
+	resp.Header.Set("Content-Type", "application/json")
+	return resp, nil
+}
 
 func main() {
 	apiKey := os.Getenv("MISTRAL_API_KEY")
@@ -22,22 +41,15 @@ func main() {
 		mistral.WithVerbose(true),
 		mistral.WithRetry(4, 1*time.Second, 3*time.Second),
 		mistral.WithRetryStatusCodes(429, 500, 502, 503, 504),
+		mistral.WithClientTransport(&fakeRoundTripper{Body: []byte(`{
+			"choices": [
+				{ "message": { "role": "assistant", "content": "Hello from fake" } }
+			]
+		}`)}), // This option may be used for testing purposes
 	)
 
-	systemPrompt := `You are a senior python developer.
-You're experienced into developing complex and modular application following the clean architecture principles.
-Take a deep breath and proceed step by step:
-- first think about the folder structure
-- then implement each file`
-
-	userPrompt := `Write a simple and nice todo list tkinter application in a single file named main.py.
-Specifications:
-- The user may be able to create a task, mark it as done, rename it or delete it.
-- The look and feel of the application must follows the Material design guidelines.
-- The full application must also be usable with teh keyboard only
-- Implement a simple task list system with a default task list provided
-- All the content (tasks and list) must be persisted locally in a json file
-`
+	systemPrompt := `You are a useful assistant.`
+	userPrompt := `Because the transport is mocked, the actual API wont be called...`
 
 	req := mistral.NewChatCompletionRequest(
 		"mistral-small-latest",

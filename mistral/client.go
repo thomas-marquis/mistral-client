@@ -10,6 +10,7 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"golang.org/x/time/rate"
@@ -52,6 +53,8 @@ type clientImpl struct {
 	retryStatusCodes map[int]struct{}
 }
 
+type Option func(impl *clientImpl)
+
 // New create a new Client instance. Available options are:
 //   - WithClientTimeout
 //   - WithBaseApiUrl
@@ -59,56 +62,105 @@ type clientImpl struct {
 //   - WithVerbose
 //   - WithRetry
 //   - WithRetryStatusCodes
+//   - WithClientTransport
 func New(apiKey string, opts ...Option) Client {
-	return NewWithConfig(apiKey, NewConfig(opts...))
-}
-
-func NewWithConfig(apiKey string, cfg *Config) Client {
 	c := &clientImpl{
 		apiKey:  apiKey,
 		baseURL: BaseApiUrl,
 		httpClient: &http.Client{
-			Timeout:   defaultTimeout,
-			Transport: cfg.Transport,
+			Timeout: defaultTimeout,
 		},
-		verbose:          cfg.Verbose,
-		retryMaxRetries:  cfg.RetryMaxRetries,
-		retryWaitMin:     cfg.RetryWaitMin,
-		retryWaitMax:     cfg.RetryWaitMax,
+		verbose:          false,
+		retryMaxRetries:  3,
+		retryWaitMin:     200 * time.Millisecond,
+		retryWaitMax:     1 * time.Second,
 		retryStatusCodes: make(map[int]struct{}),
 	}
 
-	if cfg.MistralAPIBaseURL != "" {
-		c.baseURL = cfg.MistralAPIBaseURL
-	}
-	if cfg.RateLimiter != nil {
-		c.limiter = cfg.RateLimiter
-	}
-	if cfg.ClientTimeout > 0 {
-		c.httpClient.Timeout = cfg.ClientTimeout
-	}
-	if cfg.ApiKey != "" {
-		c.apiKey = cfg.ApiKey
+	for _, code := range []int{
+		http.StatusTooManyRequests,
+		http.StatusInternalServerError,
+		http.StatusBadGateway,
+		http.StatusServiceUnavailable,
+		http.StatusGatewayTimeout,
+	} {
+		c.retryStatusCodes[code] = struct{}{}
 	}
 
-	// status codes to retry: configured or sensible defaults
-	if len(cfg.RetryStatusCodes) > 0 {
-		for _, code := range cfg.RetryStatusCodes {
-			c.retryStatusCodes[code] = struct{}{}
-		}
-	} else {
-		for _, code := range []int{
-			http.StatusTooManyRequests,
-			http.StatusInternalServerError,
-			http.StatusBadGateway,
-			http.StatusServiceUnavailable,
-			http.StatusGatewayTimeout,
-		} {
-			c.retryStatusCodes[code] = struct{}{}
-		}
+	for _, opt := range opts {
+		opt(c)
 	}
 
 	return c
+}
+
+func WithClientTimeout(timeout time.Duration) Option {
+	return func(c *clientImpl) {
+		c.httpClient.Timeout = timeout
+	}
+}
+
+func WithBaseApiUrl(baseURL string) Option {
+	return func(c *clientImpl) {
+		c.baseURL = strings.TrimSuffix(baseURL, "/")
+	}
+}
+
+func WithRateLimiter(rateLimiter *rate.Limiter) Option {
+	return func(c *clientImpl) {
+		c.limiter = rateLimiter
+	}
+}
+
+func WithVerbose(verbose bool) Option {
+	return func(c *clientImpl) {
+		c.verbose = verbose
+	}
+}
+
+// WithRetry configures automatic retries for HTTP requests.
+// maxRetries is the number of retries after the first attempt.
+// waitMin and waitMax control the exponential backoff bounds (set to 0 for default).
+// Accepted ranges:
+//
+//	0 < waitMin <= waitMax
+func WithRetry(maxRetries int, waitMin, waitMax time.Duration) Option {
+	if waitMin == 0 {
+		waitMin = 200 * time.Millisecond
+	}
+	if waitMax == 0 {
+		waitMax = 2 * time.Second
+	}
+	if waitMin > waitMax {
+		waitMin, waitMax = waitMax, waitMin
+	}
+
+	return func(c *clientImpl) {
+		c.retryMaxRetries = maxRetries
+		c.retryWaitMin = waitMin
+		c.retryWaitMax = waitMax
+	}
+}
+
+// WithRetryStatusCodes overrides the list of HTTP status codes that should trigger a retry.
+// If not specified, defaults are: 429, 500, 502, 503, 504.
+func WithRetryStatusCodes(codes ...int) Option {
+	return func(c *clientImpl) {
+		if len(codes) == 0 {
+			return
+		}
+		c.retryStatusCodes = make(map[int]struct{})
+		for _, code := range codes {
+			c.retryStatusCodes[code] = struct{}{}
+		}
+	}
+}
+
+// WithClientTransport overrides the underlying HTTP client transport.
+func WithClientTransport(t http.RoundTripper) Option {
+	return func(c *clientImpl) {
+		c.httpClient.Transport = t
+	}
 }
 
 // isRetryableErr returns true if the error is retryable.

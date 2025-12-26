@@ -13,7 +13,7 @@ import (
 	"github.com/thomas-marquis/mistral-client/mistral"
 )
 
-func TestChatCompletion(t *testing.T) {
+func TestClient_ChatCompletion(t *testing.T) {
 	t.Run("Should call Mistral /chat/completion endpoint", func(t *testing.T) {
 		var gotReq string
 		mockServer := makeMockServerWithCapture(t, "POST", "/v1/chat/completions", `
@@ -237,14 +237,10 @@ func TestChatCompletion(t *testing.T) {
 		}))
 		defer srv.Close()
 
-		cfg := &mistral.Config{
-			Verbose:           false,
-			MistralAPIBaseURL: srv.URL,
-			RetryMaxRetries:   3,
-			RetryWaitMin:      1 * time.Millisecond,
-			RetryWaitMax:      5 * time.Millisecond,
-		}
-		c := mistral.NewWithConfig("fake-api-key", cfg)
+		c := mistral.New("fake-api-key",
+			mistral.WithBaseApiUrl(srv.URL),
+			mistral.WithRetry(3, 1*time.Millisecond, 5*time.Millisecond),
+		)
 		ctx := context.Background()
 		inputMsgs := []mistral.ChatMessage{mistral.NewUserMessageFromString("Hi!")}
 
@@ -289,14 +285,10 @@ func TestChatCompletion(t *testing.T) {
 		}))
 		defer srv.Close()
 
-		cfg := &mistral.Config{
-			Verbose:           false,
-			MistralAPIBaseURL: srv.URL,
-			RetryMaxRetries:   5,
-			RetryWaitMin:      1 * time.Millisecond,
-			RetryWaitMax:      2 * time.Millisecond,
-		}
-		c := mistral.NewWithConfig("fake-api-key", cfg)
+		c := mistral.New("fake-api-key",
+			mistral.WithBaseApiUrl(srv.URL),
+			mistral.WithRetry(5, 1*time.Millisecond, 2*time.Millisecond),
+		)
 		ctx := context.Background()
 		inputMsgs := []mistral.ChatMessage{mistral.NewUserMessageFromString("Hi!")}
 
@@ -304,47 +296,41 @@ func TestChatCompletion(t *testing.T) {
 		_, err := c.ChatCompletion(ctx, mistral.NewChatCompletionRequest("mistral-large", inputMsgs))
 
 		// Then
-		expectedErr := mistral.NewApiError(
-			http.StatusBadRequest,
-			map[string]any{
-				"object": "error",
-				"message": map[string]any{
-					"detail": []any{
-						map[string]any{
-							"type":  "extra_forbidden",
-							"loc":   []any{"body", "parallel_tool_callss"},
-							"msg":   "Extra inputs are not permitted",
-							"input": true,
-						},
-					},
-				},
-				"type":  "invalid_request_error",
-				"param": nil,
-				"code":  nil,
-			},
-		)
 		assert.Error(t, err)
-		assert.Equal(t, &expectedErr, err)
+		assert.ErrorAs(t, err, new(mistral.ApiError))
 		assert.Equal(t, int32(1), atomic.LoadInt32(&attempts))
 		assert.Equal(t, "[400] invalid_request_error: extra_forbidden: Extra inputs are not permitted (body.parallel_tool_callss)", err.Error())
+		assert.Equal(t, map[string]any{
+			"object": "error",
+			"message": map[string]any{
+				"detail": []any{
+					map[string]any{
+						"type":  "extra_forbidden",
+						"loc":   []any{"body", "parallel_tool_callss"},
+						"msg":   "Extra inputs are not permitted",
+						"input": true,
+					},
+				},
+			},
+			"type":  "invalid_request_error",
+			"param": nil,
+			"code":  nil,
+		}, err.(mistral.ApiError).Content())
+		assert.Equal(t, http.StatusBadRequest, err.(mistral.ApiError).Code())
 	})
 
 	t.Run("Should retry on timeout error then succeed", func(t *testing.T) {
 		// Given
 		successJSON := []byte(`{"choices":[{"message":{"role":"assistant","content":"OK after timeout"}}]}`)
-		cfg := &mistral.Config{
-			Verbose:           false,
-			RetryMaxRetries:   3,
-			RetryWaitMin:      1 * time.Millisecond,
-			RetryWaitMax:      5 * time.Millisecond,
-			MistralAPIBaseURL: "http://invalid.local",
-			Transport: &flakyRoundTripper{
+		c := mistral.New("fake-api-key",
+			mistral.WithRetry(3, 1*time.Millisecond, 5*time.Millisecond),
+			mistral.WithClientTransport(&flakyRoundTripper{
 				failuresLeft: 1,
 				successBody:  successJSON,
-			},
-			ClientTimeout: 2 * time.Second,
-		}
-		c := mistral.NewWithConfig("fake-api-key", cfg)
+			}),
+			mistral.WithBaseApiUrl("ttp://invalid.local"),
+			mistral.WithClientTimeout(2*time.Second),
+		)
 		ctx := context.Background()
 		inputMsgs := []mistral.ChatMessage{mistral.NewUserMessageFromString("Hello")}
 
@@ -366,14 +352,10 @@ func TestChatCompletion(t *testing.T) {
 		}))
 		defer srv.Close()
 
-		cfg := &mistral.Config{
-			Verbose:           false,
-			MistralAPIBaseURL: srv.URL,
-			RetryMaxRetries:   2,
-			RetryWaitMin:      1 * time.Millisecond,
-			RetryWaitMax:      2 * time.Millisecond,
-		}
-		c := mistral.NewWithConfig("fake-api-key", cfg)
+		c := mistral.New("fake-api-key",
+			mistral.WithRetry(2, 1*time.Millisecond, 2*time.Millisecond),
+			mistral.WithBaseApiUrl(srv.URL),
+		)
 		ctx := context.Background()
 		inputMsgs := []mistral.ChatMessage{mistral.NewUserMessageFromString("Hi")}
 
