@@ -34,7 +34,4 @@ func main() {
 	fmt.Printf("Latency: %fs\n", res.Latency.Seconds())
 	fmt.Printf("Input tokens: %d; Completion tokens: %d; Total tokens: %d\n",
 		res.Usage.PromptTokens, res.Usage.CompletionTokens, res.Usage.TotalTokens)
-
-	// Use the integrated fake embedding model (for local test or development purpose):
-	fake, err := client.Embeddings(context.Background(), mistral.NewEmbeddingRequest("mistral-fake-embed", texts))
 }
