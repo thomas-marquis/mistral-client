@@ -16,12 +16,12 @@ func main() {
 	}
 	client := mistral.New(apiKey)
 
-	model, err := client.GetModel(context.Background(), "mistral-small-latest")
+	model, err := client.GetModel(context.Background(), "mistral-medium-latest")
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Printf("%+v\n", model)
+	fmt.Printf("%+v\n", model.Capabilities)
 
 	_, err = client.GetModel(context.Background(), "model-not-found")
 	if err != nil {

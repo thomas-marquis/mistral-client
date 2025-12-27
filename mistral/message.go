@@ -6,12 +6,25 @@ import (
 )
 
 type ChatMessage interface {
-	Type() Role
+	Role() Role
+	Content() Content
+}
+
+type BaseMessage struct {
+	MessageRole    Role    `json:"role"`
+	MessageContent Content `json:"content"`
+}
+
+func (m *BaseMessage) Content() Content {
+	return m.MessageContent
+}
+
+func (m *BaseMessage) Role() Role {
+	return m.MessageRole
 }
 
 type SystemMessage struct {
-	Role    Role    `json:"role"`
-	Content Content `json:"content"`
+	BaseMessage
 }
 
 var _ ChatMessage = (*SystemMessage)(nil)
@@ -19,22 +32,22 @@ var _ json.Unmarshaler = (*SystemMessage)(nil)
 
 func NewSystemMessage(content Content) *SystemMessage {
 	m := &SystemMessage{
-		Role:    RoleSystem,
-		Content: content,
+		BaseMessage{
+			MessageRole:    RoleSystem,
+			MessageContent: content,
+		},
 	}
 	return m
 }
 
 func NewSystemMessageFromString(content string) *SystemMessage {
 	m := &SystemMessage{
-		Role:    RoleSystem,
-		Content: ContentString(content),
+		BaseMessage{
+			MessageRole:    RoleSystem,
+			MessageContent: ContentString(content),
+		},
 	}
 	return m
-}
-
-func (m *SystemMessage) Type() Role {
-	return RoleSystem
 }
 
 func (m *SystemMessage) UnmarshalJSON(data []byte) error {
@@ -43,10 +56,10 @@ func (m *SystemMessage) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	m.Role = Role(res["role"].(string))
+	m.MessageRole = Role(res["role"].(string))
 
 	if stringContent, ok := res["content"].(string); ok {
-		m.Content = ContentString(stringContent)
+		m.MessageContent = ContentString(stringContent)
 	} else if listContent, ok := res["content"].([]any); ok {
 		cts := ContentChunks{}
 		for _, chunk := range listContent {
@@ -65,7 +78,7 @@ func (m *SystemMessage) UnmarshalJSON(data []byte) error {
 			}
 		}
 
-		m.Content = cts
+		m.MessageContent = cts
 	} else {
 		return fmt.Errorf("invalid content type: %T", res["content"])
 	}
@@ -74,8 +87,7 @@ func (m *SystemMessage) UnmarshalJSON(data []byte) error {
 }
 
 type UserMessage struct {
-	Role    Role    `json:"role"`
-	Content Content `json:"content"`
+	BaseMessage
 }
 
 var _ ChatMessage = (*UserMessage)(nil)
@@ -83,20 +95,20 @@ var _ json.Unmarshaler = (*UserMessage)(nil)
 
 func NewUserMessage(content Content) *UserMessage {
 	return &UserMessage{
-		Role:    RoleUser,
-		Content: content,
+		BaseMessage{
+			MessageRole:    RoleUser,
+			MessageContent: content,
+		},
 	}
 }
 
 func NewUserMessageFromString(content string) *UserMessage {
 	return &UserMessage{
-		Role:    RoleUser,
-		Content: ContentString(content),
+		BaseMessage{
+			MessageRole:    RoleUser,
+			MessageContent: ContentString(content),
+		},
 	}
-}
-
-func (m *UserMessage) Type() Role {
-	return RoleUser
 }
 
 func (m *UserMessage) UnmarshalJSON(data []byte) error {
@@ -105,19 +117,18 @@ func (m *UserMessage) UnmarshalJSON(data []byte) error {
 	if err = json.Unmarshal(data, &res); err != nil {
 		return err
 	}
-	m.Content, err = unmarshalMessageContent(res)
+	m.MessageContent, err = unmarshalMessageContent(res)
 	if err != nil {
 		return err
 	}
 
-	m.Role = Role(res["role"].(string))
+	m.MessageRole = Role(res["role"].(string))
 
 	return nil
 }
 
 type AssistantMessage struct {
-	Role      Role       `json:"role"`
-	Content   Content    `json:"content"`
+	BaseMessage
 	Prefix    bool       `json:"prefix,omitempty"`
 	ToolCalls []ToolCall `json:"tool_calls,omitempty"`
 }
@@ -127,22 +138,22 @@ var _ json.Unmarshaler = (*AssistantMessage)(nil)
 
 func NewAssistantMessage(content Content, toolCalls ...ToolCall) *AssistantMessage {
 	return &AssistantMessage{
-		Role:      RoleAssistant,
-		Content:   content,
+		BaseMessage: BaseMessage{
+			MessageRole:    RoleAssistant,
+			MessageContent: content,
+		},
 		ToolCalls: toolCalls,
 	}
 }
 
 func NewAssistantMessageFromString(content string, toolCalls ...ToolCall) *AssistantMessage {
 	return &AssistantMessage{
-		Role:      RoleAssistant,
-		Content:   ContentString(content),
+		BaseMessage: BaseMessage{
+			MessageRole:    RoleAssistant,
+			MessageContent: ContentString(content),
+		},
 		ToolCalls: toolCalls,
 	}
-}
-
-func (m *AssistantMessage) Type() Role {
-	return RoleAssistant
 }
 
 func (m *AssistantMessage) UnmarshalJSON(data []byte) error {
@@ -151,12 +162,12 @@ func (m *AssistantMessage) UnmarshalJSON(data []byte) error {
 	if err = json.Unmarshal(data, &res); err != nil {
 		return err
 	}
-	m.Content, err = unmarshalMessageContent(res)
+	m.MessageContent, err = unmarshalMessageContent(res)
 	if err != nil {
 		return err
 	}
 
-	m.Role = Role(res["role"].(string))
+	m.MessageRole = Role(res["role"].(string))
 
 	if tcs, ok := res["tool_calls"]; ok && tcs != nil {
 		m.ToolCalls = make([]ToolCall, len(tcs.([]any)))
@@ -172,10 +183,9 @@ func (m *AssistantMessage) UnmarshalJSON(data []byte) error {
 }
 
 type ToolMessage struct {
-	Role       Role    `json:"role"`
-	Content    Content `json:"content"`
-	Name       string  `json:"name"`
-	ToolCallId string  `json:"tool_call_id"`
+	BaseMessage
+	Name       string `json:"name"`
+	ToolCallId string `json:"tool_call_id"`
 }
 
 var _ ChatMessage = (*ToolMessage)(nil)
@@ -183,15 +193,13 @@ var _ json.Unmarshaler = (*ToolMessage)(nil)
 
 func NewToolMessage(name string, toolCallId string, content Content) *ToolMessage {
 	return &ToolMessage{
-		Role:       RoleTool,
-		Content:    content,
+		BaseMessage: BaseMessage{
+			MessageRole:    RoleTool,
+			MessageContent: content,
+		},
 		Name:       name,
 		ToolCallId: toolCallId,
 	}
-}
-
-func (m *ToolMessage) Type() Role {
-	return RoleTool
 }
 
 func (m *ToolMessage) UnmarshalJSON(data []byte) error {
@@ -200,12 +208,12 @@ func (m *ToolMessage) UnmarshalJSON(data []byte) error {
 	if err = json.Unmarshal(data, &res); err != nil {
 		return err
 	}
-	m.Content, err = unmarshalMessageContent(res)
+	m.MessageContent, err = unmarshalMessageContent(res)
 	if err != nil {
 		return err
 	}
 
-	m.Role = Role(res["role"].(string))
+	m.MessageRole = Role(res["role"].(string))
 	m.Name = res["name"].(string)
 	m.ToolCallId = res["tool_call_id"].(string)
 

@@ -220,6 +220,11 @@ type AudioContent struct {
 
 var _ ContentChunk = (*AudioContent)(nil)
 
+// NewAudioContent creates a new audio content chunk.
+// Input audio can be:
+//   - a URL to an audio file hosted on the internet
+//   - a base64 encoded audio file
+//   - URl of an uploaded audio file on La Plateforme
 func NewAudioContent(inputAudio string) *AudioContent {
 	return &AudioContent{
 		ContentType: ContentTypeAudio,

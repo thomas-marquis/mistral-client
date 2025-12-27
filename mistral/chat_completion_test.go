@@ -159,7 +159,7 @@ func TestClient_ChatCompletion(t *testing.T) {
 		// Then
 		assert.NoError(t, err)
 		assert.Len(t, res.Choices, 1)
-		assert.Equal(t, mistral.RoleAssistant, res.Choices[0].Message.Type())
+		assert.Equal(t, mistral.RoleAssistant, res.Choices[0].Message.Role())
 		assert.Equal(t, mistral.FinishReasonToolCalls, res.Choices[0].FinishReason)
 		assert.Len(t, res.Choices[0].Message.ToolCalls, 1)
 		assert.Equal(t, "add", res.Choices[0].Message.ToolCalls[0].Function.Name)

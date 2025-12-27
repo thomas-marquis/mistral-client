@@ -26,8 +26,7 @@ func main() {
 	}
 
 	filtered, err := client.SearchModels(context.Background(), &mistral.ModelCapabilities{
-		CompletionChat:  true,
-		FunctionCalling: true,
+		Audio: true,
 	})
 	if err != nil {
 		panic(err)
@@ -35,6 +34,6 @@ func main() {
 
 	fmt.Println("Filtered models:")
 	for _, model := range filtered {
-		fmt.Printf("%+v\n", model)
+		fmt.Printf("%s: %+v\n", model.Id, model.Capabilities)
 	}
 }

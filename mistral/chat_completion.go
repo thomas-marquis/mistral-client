@@ -145,7 +145,7 @@ func (r *ChatCompletionResponse) AssistantMessage() *AssistantMessage {
 		logger.Printf("Message is nil")
 		return nil
 	}
-	if msg.Role != RoleAssistant {
+	if msg.MessageRole != RoleAssistant {
 		logger.Printf("Message is not an assistant message: %+v", msg)
 		return nil
 	}
