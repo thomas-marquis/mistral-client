@@ -8,14 +8,7 @@ import (
 	"time"
 )
 
-type ChatCompletionRequest struct {
-
-	// Model is the ID of the model to use. You can use the ListModels method to see all of your available models, or see https://docs.mistral.ai/getting-started/models overview for model descriptions.
-	Model string `json:"model"`
-
-	// Messages is(are) the prompt(s) to generate completions for, encoded as a list of dict with role and content.
-	Messages []ChatMessage `json:"messages"`
-
+type CompletionConfig struct {
 	// MaxTokens is the maximum number of tokens to generate in the completion. The token count of your prompt plus max_tokens cannot exceed the model's context length.
 	MaxTokens int `json:"max_tokens,omitempty"`
 
@@ -43,15 +36,11 @@ type ChatCompletionRequest struct {
 	// Prefer using the options builder WithResponseTextFormat, WithResponseJsonSchema, WithResponseJsonObjectFormat instead of setting this field directly.
 	ResponseFormat *ResponseFormat `json:"response_format,omitempty"`
 
-	Tools []Tool `json:"tools,omitempty"`
-
 	// ToolChoice controls which (if any) tool is called by the model.
 	//
-	// ToolChoiceNone means the model will not call any tool and instead generates a message.
-	//
-	// ToolChoiceAuto means the model can pick between generating a message or calling one or more tools.
-	//
-	// ToolChoiceAny or required means the model must call one or more tools.
+	//  - ToolChoiceNone means the model will not call any tool and instead generates a message.
+	//  - ToolChoiceAuto means the model can pick between generating a message or calling one or more tools.
+	//  - ToolChoiceAny or required means the model must call one or more tools.
 	//
 	// Specifying a particular tool via \{"type": "function", "function": \{"name": "my_function"\}\} forces the model to call that tool.
 	// You can marshal a ToolChoice object directly into this field.
@@ -88,14 +77,28 @@ type ChatCompletionRequest struct {
 	Stream bool `json:"stream,omitempty"`
 }
 
+type ChatCompletionRequest struct {
+	CompletionConfig
+
+	// Model is the ID of the model to use. You can use the ListModels method to see all of your available models, or see https://docs.mistral.ai/getting-started/models overview for model descriptions.
+	Model string `json:"model"`
+
+	// Messages is(are) the prompt(s) to generate completions for, encoded as a list of dict with role and content.
+	Messages []ChatMessage `json:"messages"`
+
+	Tools []Tool `json:"tools,omitempty"`
+}
+
 type ChatCompletionRequestOption func(request *ChatCompletionRequest)
 
 func NewChatCompletionRequest(model string, messages []ChatMessage, opts ...ChatCompletionRequestOption) *ChatCompletionRequest {
 	r := &ChatCompletionRequest{
-		Messages:          messages,
-		Model:             model,
-		ParallelToolCalls: true,
-		Stream:            false,
+		CompletionConfig: CompletionConfig{
+			ParallelToolCalls: true,
+			Stream:            false,
+		},
+		Messages: messages,
+		Model:    model,
 	}
 	for _, opt := range opts {
 		opt(r)
