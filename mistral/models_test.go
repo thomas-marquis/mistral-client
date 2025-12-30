@@ -226,3 +226,67 @@ func TestClientImpl_SearchModelsByCapabilities(t *testing.T) {
 		assert.Equal(t, "mistral-moderation-latest", res[0].Id)
 	})
 }
+
+func TestBaseModelCard_HasNoCapabilities(t *testing.T) {
+	t.Run("should return true when model has no capabilities", func(t *testing.T) {
+		// Given
+		model := mistral.BaseModelCard{
+			Name:         "mistral-embed",
+			Id:           "mistral-embed-2507",
+			Capabilities: mistral.ModelCapabilities{},
+		}
+
+		// When
+		res := model.HasNoCapabilities()
+
+		// Then
+		assert.True(t, res)
+	})
+
+	t.Run("should return false when model has at least one capability", func(t *testing.T) {
+		// Given
+		model := mistral.BaseModelCard{
+			Name: "mistral-embed",
+			Id:   "mistral-embed-2507",
+			Capabilities: mistral.ModelCapabilities{
+				CompletionChat: true,
+			},
+		}
+
+		// When
+		res := model.HasNoCapabilities()
+
+		// Then
+		assert.False(t, res)
+	})
+}
+
+func TestBaseModelCard_IsEmbedding(t *testing.T) {
+	t.Run("should return true when model is an embedding model", func(t *testing.T) {
+		// Given
+		model := mistral.BaseModelCard{
+			Name: "mistral-embed",
+			Id:   "mistral-embed-2507",
+		}
+
+		// When
+		res := model.IsEmbedding()
+
+		// Then
+		assert.True(t, res)
+	})
+
+	t.Run("should return false when model is not an embedding model", func(t *testing.T) {
+		// Given
+		model := mistral.BaseModelCard{
+			Name: "mistral-large",
+			Id:   "mistral-large-2507",
+		}
+
+		// When
+		res := model.IsEmbedding()
+
+		// Then
+		assert.False(t, res)
+	})
+}
