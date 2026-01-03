@@ -104,8 +104,8 @@ type ToolChoice struct {
 
 type PropertyDefinition struct {
 	AdditionalProperties bool                          `json:"additionalProperties,omitempty"`
-	Description          string                        `json:"description"`
-	Type                 string                        `json:"type"`
+	Description          string                        `json:"description,omitempty"`
+	Type                 string                        `json:"type,omitempty"`
 	Properties           map[string]PropertyDefinition `json:"properties,omitempty"`
 	Default              any                           `json:"default,omitempty"`
 }

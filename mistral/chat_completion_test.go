@@ -185,10 +185,9 @@ func TestClient_ChatCompletion(t *testing.T) {
 				"description": "add two numbers",
 				"parameters": {
 				  "type": "object",
-				  "description": "",
 				  "properties": {
-					"a": {"type": "number", "description": ""},
-					"b": {"type": "number", "description": ""}
+					"a": {"type": "number"},
+					"b": {"type": "number"}
 				  }
 				}
 			  }
@@ -200,9 +199,8 @@ func TestClient_ChatCompletion(t *testing.T) {
 				"description": "get user by id",
 				"parameters": {
 				  "type": "object",
-				  "description": "",
 				  "properties": {
-					"id": {"type": "string", "description": ""}
+					"id": {"type": "string"}
 				  }
 				}
 			  }
