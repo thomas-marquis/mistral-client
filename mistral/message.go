@@ -67,10 +67,10 @@ func (m *SystemMessage) UnmarshalJSON(data []byte) error {
 
 			switch t["type"].(string) {
 			case ContentTypeText.String():
-				cts = append(cts, NewTextContent(t["text"].(string)))
+				cts = append(cts, NewTextChunk(t["text"].(string)))
 
 			case ContentTypeThink.String():
-				var tc ThinkContent
+				var tc ThinkChunk
 				if err := mapToStruct(t, &tc); err != nil {
 					return err
 				}
@@ -238,19 +238,19 @@ func unmarshalMessageContent(raw map[string]any) (Content, error) {
 
 			switch t["type"].(string) {
 			case ContentTypeText.String():
-				ptr = &TextContent{}
+				ptr = &TextChunk{}
 			case ContentTypeImageURL.String():
-				ptr = &ImageUrlContent{}
+				ptr = &ImageUrlChunk{}
 			case ContentTypeDocumentURL.String():
-				ptr = &DocumentUrlContent{}
+				ptr = &DocumentUrlChunk{}
 			case ContentTypeReference.String():
-				ptr = &ReferenceContent{}
+				ptr = &ReferenceChunk{}
 			case ContentTypeFile.String():
-				ptr = &FileContent{}
+				ptr = &FileChunk{}
 			case ContentTypeThink.String():
-				ptr = &ThinkContent{}
+				ptr = &ThinkChunk{}
 			case ContentTypeAudio.String():
-				ptr = &AudioContent{}
+				ptr = &AudioChunk{}
 			}
 			if err := mapToStruct(t, ptr); err != nil {
 				return nil, err

@@ -8,10 +8,10 @@ import (
 	"github.com/thomas-marquis/mistral-client/mistral"
 )
 
-func TestTextContent(t *testing.T) {
+func TestTextChunk(t *testing.T) {
 	t.Run("should be unmarshaled from json", func(t *testing.T) {
 		j := `{"text": "hello", "type": "text"}`
-		var tc mistral.TextContent
+		var tc mistral.TextChunk
 
 		assert.NoError(t, json.Unmarshal([]byte(j), &tc))
 		assert.Equal(t, "hello", tc.Text)
@@ -19,7 +19,7 @@ func TestTextContent(t *testing.T) {
 	})
 
 	t.Run("should be marshaled to json", func(t *testing.T) {
-		tc := mistral.NewTextContent("hello")
+		tc := mistral.NewTextChunk("hello")
 		j, err := json.Marshal(tc)
 
 		assert.NoError(t, err)
@@ -27,10 +27,10 @@ func TestTextContent(t *testing.T) {
 	})
 }
 
-func TestImageUrlContent(t *testing.T) {
+func TestImageUrlChunk(t *testing.T) {
 	t.Run("should be unmarshaled from json", func(t *testing.T) {
 		j := `{"image_url": "https://example.com/image.png", "type": "image_url"}`
-		var ic mistral.ImageUrlContent
+		var ic mistral.ImageUrlChunk
 
 		assert.NoError(t, json.Unmarshal([]byte(j), &ic))
 		assert.Equal(t, "https://example.com/image.png", ic.ImageURL)
@@ -38,7 +38,7 @@ func TestImageUrlContent(t *testing.T) {
 	})
 
 	t.Run("should be marshaled to json", func(t *testing.T) {
-		ic := mistral.NewImageUrlContent("https://example.com/image.png")
+		ic := mistral.NewImageUrlChunk("https://example.com/image.png")
 		j, err := json.Marshal(ic)
 
 		assert.NoError(t, err)
@@ -46,10 +46,10 @@ func TestImageUrlContent(t *testing.T) {
 	})
 }
 
-func TestDocumentUrlContent(t *testing.T) {
+func TestDocumentUrlChunk(t *testing.T) {
 	t.Run("should be unmarshaled from json", func(t *testing.T) {
 		j := `{"document_name": "document.pdf", "document_url": "https://example.com/document.pdf", "type": "document_url"}`
-		var duc mistral.DocumentUrlContent
+		var duc mistral.DocumentUrlChunk
 
 		assert.NoError(t, json.Unmarshal([]byte(j), &duc))
 		assert.Equal(t, "document.pdf", duc.DocumentName)
@@ -58,7 +58,7 @@ func TestDocumentUrlContent(t *testing.T) {
 	})
 
 	t.Run("should be marshaled to json", func(t *testing.T) {
-		duc := mistral.NewDocumentUrlContent("document.pdf", "https://example.com/document.pdf")
+		duc := mistral.NewDocumentUrlChunk("document.pdf", "https://example.com/document.pdf")
 		j, err := json.Marshal(duc)
 
 		assert.NoError(t, err)
@@ -67,7 +67,7 @@ func TestDocumentUrlContent(t *testing.T) {
 
 	t.Run("should be unmarshaled from json with null document name", func(t *testing.T) {
 		j := `{"document_name": null, "document_url": "https://example.com/document.pdf", "type": "document_url"}`
-		var duc mistral.DocumentUrlContent
+		var duc mistral.DocumentUrlChunk
 
 		assert.NoError(t, json.Unmarshal([]byte(j), &duc))
 		assert.Equal(t, "", duc.DocumentName)
@@ -76,7 +76,7 @@ func TestDocumentUrlContent(t *testing.T) {
 	})
 
 	t.Run("should be marshaled to json with null document name", func(t *testing.T) {
-		duc := mistral.NewDocumentUrlContent("", "https://example.com/document.pdf")
+		duc := mistral.NewDocumentUrlChunk("", "https://example.com/document.pdf")
 		j, err := json.Marshal(duc)
 
 		assert.NoError(t, err)
@@ -84,10 +84,10 @@ func TestDocumentUrlContent(t *testing.T) {
 	})
 }
 
-func TestReferenceContent(t *testing.T) {
+func TestReferenceChunk(t *testing.T) {
 	t.Run("should be unmarshaled from json", func(t *testing.T) {
 		j := `{"reference_ids": [1, 2, 3, 5, 8], "type": "reference"}`
-		var rc mistral.ReferenceContent
+		var rc mistral.ReferenceChunk
 
 		assert.NoError(t, json.Unmarshal([]byte(j), &rc))
 		assert.Equal(t, []int{1, 2, 3, 5, 8}, rc.ReferenceIds)
@@ -95,7 +95,7 @@ func TestReferenceContent(t *testing.T) {
 	})
 
 	t.Run("should be marshaled to json", func(t *testing.T) {
-		rc := mistral.NewReferenceContent(1, 2, 3, 5, 8)
+		rc := mistral.NewReferenceChunk(1, 2, 3, 5, 8)
 		j, err := json.Marshal(rc)
 
 		assert.NoError(t, err)
@@ -103,10 +103,10 @@ func TestReferenceContent(t *testing.T) {
 	})
 }
 
-func TestFileContent(t *testing.T) {
+func TestFileChunk(t *testing.T) {
 	t.Run("should be unmarshaled from json", func(t *testing.T) {
 		j := `{"file_id": "1234567890", "type": "file"}`
-		var fc mistral.FileContent
+		var fc mistral.FileChunk
 
 		assert.NoError(t, json.Unmarshal([]byte(j), &fc))
 		assert.Equal(t, "1234567890", fc.FileId)
@@ -114,7 +114,7 @@ func TestFileContent(t *testing.T) {
 	})
 
 	t.Run("should be marshaled to json", func(t *testing.T) {
-		fc := mistral.NewFileContent("1234567890")
+		fc := mistral.NewFileChunk("1234567890")
 		j, err := json.Marshal(fc)
 
 		assert.NoError(t, err)
@@ -122,7 +122,7 @@ func TestFileContent(t *testing.T) {
 	})
 }
 
-func TestThinkContent(t *testing.T) {
+func TestThinkChunk(t *testing.T) {
 	t.Run("should be unmarshaled from json", func(t *testing.T) {
 		j := `{
 			"type": "thinking",
@@ -132,16 +132,16 @@ func TestThinkContent(t *testing.T) {
 				{"type": "reference", "reference_ids": [1, 2, 3]}
 			]
 		}`
-		var tc mistral.ThinkContent
+		var tc mistral.ThinkChunk
 
 		assert.NoError(t, json.Unmarshal([]byte(j), &tc))
 		assert.Equal(t, mistral.ContentTypeThink, tc.Type())
 		assert.Equal(t, false, tc.Closed)
 		assert.Len(t, tc.Thinking, 2)
 		assert.Equal(t, mistral.ContentTypeText, tc.Thinking[0].Type())
-		assert.Equal(t, "hello", tc.Thinking[0].(*mistral.TextContent).Text)
+		assert.Equal(t, "hello", tc.Thinking[0].(*mistral.TextChunk).Text)
 		assert.Equal(t, mistral.ContentTypeReference, tc.Thinking[1].Type())
-		assert.Equal(t, []int{1, 2, 3}, tc.Thinking[1].(*mistral.ReferenceContent).ReferenceIds)
+		assert.Equal(t, []int{1, 2, 3}, tc.Thinking[1].(*mistral.ReferenceChunk).ReferenceIds)
 	})
 
 	t.Run("should be unmarshaled from json with closed true by default", func(t *testing.T) {
@@ -149,7 +149,7 @@ func TestThinkContent(t *testing.T) {
 			"type": "thinking",
 			"thinking": []
 		}`
-		var tc mistral.ThinkContent
+		var tc mistral.ThinkChunk
 
 		assert.NoError(t, json.Unmarshal([]byte(j), &tc))
 		assert.Equal(t, mistral.ContentTypeThink, tc.Type())
@@ -158,9 +158,9 @@ func TestThinkContent(t *testing.T) {
 	})
 
 	t.Run("should be marshaled to json", func(t *testing.T) {
-		tc := mistral.NewThinkContent(
-			mistral.NewTextContent("hello"),
-			mistral.NewReferenceContent(1, 2, 3),
+		tc := mistral.NewThinkChunk(
+			mistral.NewTextChunk("hello"),
+			mistral.NewReferenceChunk(1, 2, 3),
 		)
 		j, err := json.Marshal(tc)
 
@@ -169,7 +169,7 @@ func TestThinkContent(t *testing.T) {
 	})
 
 	t.Run("should be marshaled to json with closed false", func(t *testing.T) {
-		tc := mistral.NewThinkContent()
+		tc := mistral.NewThinkChunk()
 		tc.Closed = false
 		j, err := json.Marshal(tc)
 
@@ -179,21 +179,21 @@ func TestThinkContent(t *testing.T) {
 
 	t.Run("should panic when trying to add an unsupported content type", func(t *testing.T) {
 		assert.PanicsWithValue(t, "only text and reference content can be added to a thinking content", func() {
-			mistral.NewThinkContent(mistral.NewImageUrlContent("https://example.com/image.png"))
+			mistral.NewThinkChunk(mistral.NewImageUrlChunk("https://example.com/image.png"))
 		})
 	})
 
 	t.Run("should panic when trying to add a nil content", func(t *testing.T) {
 		assert.PanicsWithValue(t, "nil content cannot be added to a thinking content", func() {
-			mistral.NewThinkContent(nil)
+			mistral.NewThinkChunk(nil)
 		})
 	})
 }
 
-func TestAudioContent(t *testing.T) {
+func TestAudioChunk(t *testing.T) {
 	t.Run("should be unmarshaled from json", func(t *testing.T) {
 		j := `{"input_audio": "https://example.com/audio.mp3", "type": "input_audio"}`
-		var ac mistral.AudioContent
+		var ac mistral.AudioChunk
 
 		assert.NoError(t, json.Unmarshal([]byte(j), &ac))
 		assert.Equal(t, mistral.ContentTypeAudio, ac.Type())
@@ -201,7 +201,7 @@ func TestAudioContent(t *testing.T) {
 	})
 
 	t.Run("should be marshaled to json", func(t *testing.T) {
-		ac := mistral.NewAudioContent("https://example.com/audio.mp3")
+		ac := mistral.NewAudioChunk("https://example.com/audio.mp3")
 		j, err := json.Marshal(ac)
 
 		assert.NoError(t, err)

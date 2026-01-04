@@ -33,8 +33,8 @@ func main() {
 		"voxtral-small-latest",
 		[]mistral.ChatMessage{
 			mistral.NewUserMessage(mistral.ContentChunks{
-				mistral.NewAudioContent(base64Str),
-				mistral.NewTextContent(userPrompt),
+				mistral.NewAudioChunk(base64Str),
+				mistral.NewTextChunk(userPrompt),
 			}),
 		})
 	res, err := client.ChatCompletion(context.Background(), req)

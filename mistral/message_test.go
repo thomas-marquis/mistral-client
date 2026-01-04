@@ -32,8 +32,8 @@ func TestSystemMessage(t *testing.T) {
 		assert.NoError(t, json.Unmarshal([]byte(j), &sm))
 		assert.Equal(t, mistral.RoleSystem, sm.MessageRole)
 		assert.Len(t, sm.MessageContent.Chunks(), 2)
-		assert.Equal(t, "hello", sm.MessageContent.Chunks()[0].(*mistral.TextContent).Text)
-		assert.Equal(t, "world", sm.MessageContent.Chunks()[1].(*mistral.ThinkContent).Thinking[0].(*mistral.TextContent).Text)
+		assert.Equal(t, "hello", sm.MessageContent.Chunks()[0].(*mistral.TextChunk).Text)
+		assert.Equal(t, "world", sm.MessageContent.Chunks()[1].(*mistral.ThinkChunk).Thinking[0].(*mistral.TextChunk).Text)
 	})
 
 	t.Run("should be marshaled to json with simple string content", func(t *testing.T) {
@@ -47,8 +47,8 @@ func TestSystemMessage(t *testing.T) {
 	t.Run("should be marshaled to json with chunked content", func(t *testing.T) {
 		sm := mistral.NewSystemMessage(
 			mistral.ContentChunks{
-				mistral.NewTextContent("hello"),
-				mistral.NewThinkContent(mistral.NewTextContent("world")),
+				mistral.NewTextChunk("hello"),
+				mistral.NewThinkChunk(mistral.NewTextChunk("world")),
 			},
 		)
 		j, err := json.Marshal(sm)
@@ -79,14 +79,14 @@ func TestUserMessage(t *testing.T) {
 		assert.Equal(t, mistral.RoleUser, um.MessageRole)
 		assert.Len(t, um.MessageContent.Chunks(), 7)
 
-		assert.Equal(t, "hello", um.MessageContent.Chunks()[0].(*mistral.TextContent).Text)
-		assert.Equal(t, "https://example.com/image.png", um.MessageContent.Chunks()[1].(*mistral.ImageUrlContent).ImageURL)
-		assert.Equal(t, "document.pdf", um.MessageContent.Chunks()[2].(*mistral.DocumentUrlContent).DocumentName)
-		assert.Equal(t, "https://example.com/document.pdf", um.MessageContent.Chunks()[2].(*mistral.DocumentUrlContent).DocumentURL)
-		assert.Equal(t, []int{1, 2, 3, 5, 8}, um.MessageContent.Chunks()[3].(*mistral.ReferenceContent).ReferenceIds)
-		assert.Equal(t, "1234567890", um.MessageContent.Chunks()[4].(*mistral.FileContent).FileId)
-		assert.Equal(t, "world", um.MessageContent.Chunks()[5].(*mistral.ThinkContent).Thinking[0].(*mistral.TextContent).Text)
-		assert.Equal(t, "https://example.com/audio.mp3", um.MessageContent.Chunks()[6].(*mistral.AudioContent).InputAudio)
+		assert.Equal(t, "hello", um.MessageContent.Chunks()[0].(*mistral.TextChunk).Text)
+		assert.Equal(t, "https://example.com/image.png", um.MessageContent.Chunks()[1].(*mistral.ImageUrlChunk).ImageURL)
+		assert.Equal(t, "document.pdf", um.MessageContent.Chunks()[2].(*mistral.DocumentUrlChunk).DocumentName)
+		assert.Equal(t, "https://example.com/document.pdf", um.MessageContent.Chunks()[2].(*mistral.DocumentUrlChunk).DocumentURL)
+		assert.Equal(t, []int{1, 2, 3, 5, 8}, um.MessageContent.Chunks()[3].(*mistral.ReferenceChunk).ReferenceIds)
+		assert.Equal(t, "1234567890", um.MessageContent.Chunks()[4].(*mistral.FileChunk).FileId)
+		assert.Equal(t, "world", um.MessageContent.Chunks()[5].(*mistral.ThinkChunk).Thinking[0].(*mistral.TextChunk).Text)
+		assert.Equal(t, "https://example.com/audio.mp3", um.MessageContent.Chunks()[6].(*mistral.AudioChunk).InputAudio)
 
 	})
 
@@ -128,8 +128,8 @@ func TestUserMessage(t *testing.T) {
 	t.Run("should be marshaled to json with chunked content", func(t *testing.T) {
 		um := mistral.NewUserMessage(
 			mistral.ContentChunks{
-				mistral.NewTextContent("hello"),
-				mistral.NewThinkContent(mistral.NewTextContent("world")),
+				mistral.NewTextChunk("hello"),
+				mistral.NewThinkChunk(mistral.NewTextChunk("world")),
 			},
 		)
 		j, err := json.Marshal(um)
@@ -163,14 +163,14 @@ func TestAssistantMessage(t *testing.T) {
 		assert.Nil(t, am.ToolCalls)
 		assert.Len(t, am.MessageContent.Chunks(), 7)
 
-		assert.Equal(t, "hello", am.MessageContent.Chunks()[0].(*mistral.TextContent).Text)
-		assert.Equal(t, "https://example.com/image.png", am.MessageContent.Chunks()[1].(*mistral.ImageUrlContent).ImageURL)
-		assert.Equal(t, "document.pdf", am.MessageContent.Chunks()[2].(*mistral.DocumentUrlContent).DocumentName)
-		assert.Equal(t, "https://example.com/document.pdf", am.MessageContent.Chunks()[2].(*mistral.DocumentUrlContent).DocumentURL)
-		assert.Equal(t, []int{1, 2, 3, 5, 8}, am.MessageContent.Chunks()[3].(*mistral.ReferenceContent).ReferenceIds)
-		assert.Equal(t, "1234567890", am.MessageContent.Chunks()[4].(*mistral.FileContent).FileId)
-		assert.Equal(t, "world", am.MessageContent.Chunks()[5].(*mistral.ThinkContent).Thinking[0].(*mistral.TextContent).Text)
-		assert.Equal(t, "https://example.com/audio.mp3", am.MessageContent.Chunks()[6].(*mistral.AudioContent).InputAudio)
+		assert.Equal(t, "hello", am.MessageContent.Chunks()[0].(*mistral.TextChunk).Text)
+		assert.Equal(t, "https://example.com/image.png", am.MessageContent.Chunks()[1].(*mistral.ImageUrlChunk).ImageURL)
+		assert.Equal(t, "document.pdf", am.MessageContent.Chunks()[2].(*mistral.DocumentUrlChunk).DocumentName)
+		assert.Equal(t, "https://example.com/document.pdf", am.MessageContent.Chunks()[2].(*mistral.DocumentUrlChunk).DocumentURL)
+		assert.Equal(t, []int{1, 2, 3, 5, 8}, am.MessageContent.Chunks()[3].(*mistral.ReferenceChunk).ReferenceIds)
+		assert.Equal(t, "1234567890", am.MessageContent.Chunks()[4].(*mistral.FileChunk).FileId)
+		assert.Equal(t, "world", am.MessageContent.Chunks()[5].(*mistral.ThinkChunk).Thinking[0].(*mistral.TextChunk).Text)
+		assert.Equal(t, "https://example.com/audio.mp3", am.MessageContent.Chunks()[6].(*mistral.AudioChunk).InputAudio)
 	})
 
 	t.Run("should be unmarshable with tool calls", func(t *testing.T) {
@@ -238,8 +238,8 @@ func TestAssistantMessage(t *testing.T) {
 	t.Run("should be marshaled to json with chunked content", func(t *testing.T) {
 		am := mistral.NewAssistantMessage(
 			mistral.ContentChunks{
-				mistral.NewTextContent("hello"),
-				mistral.NewThinkContent(mistral.NewTextContent("world")),
+				mistral.NewTextChunk("hello"),
+				mistral.NewThinkChunk(mistral.NewTextChunk("world")),
 			},
 		)
 		j, err := json.Marshal(am)
@@ -286,14 +286,14 @@ func TestToolMessage(t *testing.T) {
 		assert.Equal(t, "azerty", tm.ToolCallId)
 
 		assert.Len(t, tm.MessageContent.Chunks(), 7)
-		assert.Equal(t, "hello", tm.MessageContent.Chunks()[0].(*mistral.TextContent).Text)
-		assert.Equal(t, "https://example.com/image.png", tm.MessageContent.Chunks()[1].(*mistral.ImageUrlContent).ImageURL)
-		assert.Equal(t, "document.pdf", tm.MessageContent.Chunks()[2].(*mistral.DocumentUrlContent).DocumentName)
-		assert.Equal(t, "https://example.com/document.pdf", tm.MessageContent.Chunks()[2].(*mistral.DocumentUrlContent).DocumentURL)
-		assert.Equal(t, []int{1, 2, 3, 5, 8}, tm.MessageContent.Chunks()[3].(*mistral.ReferenceContent).ReferenceIds)
-		assert.Equal(t, "1234567890", tm.MessageContent.Chunks()[4].(*mistral.FileContent).FileId)
-		assert.Equal(t, "world", tm.MessageContent.Chunks()[5].(*mistral.ThinkContent).Thinking[0].(*mistral.TextContent).Text)
-		assert.Equal(t, "https://example.com/audio.mp3", tm.MessageContent.Chunks()[6].(*mistral.AudioContent).InputAudio)
+		assert.Equal(t, "hello", tm.MessageContent.Chunks()[0].(*mistral.TextChunk).Text)
+		assert.Equal(t, "https://example.com/image.png", tm.MessageContent.Chunks()[1].(*mistral.ImageUrlChunk).ImageURL)
+		assert.Equal(t, "document.pdf", tm.MessageContent.Chunks()[2].(*mistral.DocumentUrlChunk).DocumentName)
+		assert.Equal(t, "https://example.com/document.pdf", tm.MessageContent.Chunks()[2].(*mistral.DocumentUrlChunk).DocumentURL)
+		assert.Equal(t, []int{1, 2, 3, 5, 8}, tm.MessageContent.Chunks()[3].(*mistral.ReferenceChunk).ReferenceIds)
+		assert.Equal(t, "1234567890", tm.MessageContent.Chunks()[4].(*mistral.FileChunk).FileId)
+		assert.Equal(t, "world", tm.MessageContent.Chunks()[5].(*mistral.ThinkChunk).Thinking[0].(*mistral.TextChunk).Text)
+		assert.Equal(t, "https://example.com/audio.mp3", tm.MessageContent.Chunks()[6].(*mistral.AudioChunk).InputAudio)
 	})
 
 	t.Run("should be marshaled to json", func(t *testing.T) {
@@ -301,8 +301,8 @@ func TestToolMessage(t *testing.T) {
 			"testFunction",
 			"azerty",
 			mistral.ContentChunks{
-				mistral.NewTextContent("hello"),
-				mistral.NewThinkContent(mistral.NewTextContent("world")),
+				mistral.NewTextChunk("hello"),
+				mistral.NewThinkChunk(mistral.NewTextChunk("world")),
 			},
 		)
 		j, err := json.Marshal(tm)

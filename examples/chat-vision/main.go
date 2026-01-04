@@ -25,8 +25,8 @@ func main() {
 		"mistral-small-latest",
 		[]mistral.ChatMessage{
 			mistral.NewUserMessage(mistral.ContentChunks{
-				mistral.NewImageUrlContent(imageUrl),
-				mistral.NewTextContent(userPrompt),
+				mistral.NewImageUrlChunk(imageUrl),
+				mistral.NewTextChunk(userPrompt),
 			}),
 		},
 		mistral.WithResponseJsonSchema(map[string]any{
