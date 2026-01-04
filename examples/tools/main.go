@@ -57,7 +57,7 @@ Call the tool write_file to write the code the user ask your to write.`
 
 	msg := res.AssistantMessage()
 	if msg != nil {
-		fmt.Printf("Content:\n%s\n", msg.Content)
+		fmt.Printf("MessageContent:\n%s\n", msg.MessageContent)
 		if len(msg.ToolCalls) > 0 {
 			for _, call := range msg.ToolCalls {
 				fmt.Printf("Function %s called with arguments:\n%+v\n", call.Function.Name, call.Function.Arguments)

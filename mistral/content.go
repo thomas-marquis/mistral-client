@@ -53,109 +53,109 @@ type ContentChunk interface {
 	Type() ContentType
 }
 
-type TextContent struct {
+type TextChunk struct {
 	ContentType ContentType `json:"type"`
 	Text        string      `json:"text"`
 }
 
-var _ ContentChunk = (*TextContent)(nil)
+var _ ContentChunk = (*TextChunk)(nil)
 
-func NewTextContent(text string) *TextContent {
-	return &TextContent{
+func NewTextChunk(text string) *TextChunk {
+	return &TextChunk{
 		ContentType: ContentTypeText,
 		Text:        text,
 	}
 }
 
-func (c *TextContent) Type() ContentType {
+func (c *TextChunk) Type() ContentType {
 	return ContentTypeText
 }
 
-type ImageUrlContent struct {
+type ImageUrlChunk struct {
 	ContentType ContentType `json:"type"`
 	ImageURL    string      `json:"image_url"`
 }
 
-var _ ContentChunk = (*ImageUrlContent)(nil)
+var _ ContentChunk = (*ImageUrlChunk)(nil)
 
-func NewImageUrlContent(imageUrl string) *ImageUrlContent {
-	return &ImageUrlContent{
+func NewImageUrlChunk(imageUrl string) *ImageUrlChunk {
+	return &ImageUrlChunk{
 		ContentType: ContentTypeImageURL,
 		ImageURL:    imageUrl,
 	}
 }
 
-func (c *ImageUrlContent) Type() ContentType {
+func (c *ImageUrlChunk) Type() ContentType {
 	return ContentTypeImageURL
 }
 
-type DocumentUrlContent struct {
+type DocumentUrlChunk struct {
 	ContentType  ContentType `json:"type"`
 	DocumentName string      `json:"document_name,omitempty"`
 	DocumentURL  string      `json:"document_url"`
 }
 
-var _ ContentChunk = (*DocumentUrlContent)(nil)
+var _ ContentChunk = (*DocumentUrlChunk)(nil)
 
-func NewDocumentUrlContent(documentName, documentURL string) *DocumentUrlContent {
-	return &DocumentUrlContent{
+func NewDocumentUrlChunk(documentName, documentURL string) *DocumentUrlChunk {
+	return &DocumentUrlChunk{
 		ContentType:  ContentTypeDocumentURL,
 		DocumentName: documentName,
 		DocumentURL:  documentURL,
 	}
 }
 
-func (c *DocumentUrlContent) Type() ContentType {
+func (c *DocumentUrlChunk) Type() ContentType {
 	return ContentTypeDocumentURL
 }
 
-type ReferenceContent struct {
+type ReferenceChunk struct {
 	ContentType  ContentType `json:"type"`
 	ReferenceIds []int       `json:"reference_ids"`
 }
 
-var _ ContentChunk = (*ReferenceContent)(nil)
+var _ ContentChunk = (*ReferenceChunk)(nil)
 
-func NewReferenceContent(referenceIds ...int) *ReferenceContent {
-	return &ReferenceContent{
+func NewReferenceChunk(referenceIds ...int) *ReferenceChunk {
+	return &ReferenceChunk{
 		ContentType:  ContentTypeReference,
 		ReferenceIds: referenceIds,
 	}
 }
 
-func (c *ReferenceContent) Type() ContentType {
+func (c *ReferenceChunk) Type() ContentType {
 	return ContentTypeReference
 }
 
-type FileContent struct {
+type FileChunk struct {
 	ContentType ContentType `json:"type"`
 	FileId      string      `json:"file_id"`
 }
 
-var _ ContentChunk = (*FileContent)(nil)
+var _ ContentChunk = (*FileChunk)(nil)
 
-func NewFileContent(fileId string) *FileContent {
-	return &FileContent{
+func NewFileChunk(fileId string) *FileChunk {
+	return &FileChunk{
 		ContentType: ContentTypeFile,
 		FileId:      fileId,
 	}
 }
 
-func (c *FileContent) Type() ContentType {
+func (c *FileChunk) Type() ContentType {
 	return ContentTypeFile
 }
 
-type ThinkContent struct {
+type ThinkChunk struct {
 	ContentType ContentType    `json:"type"`
 	Closed      bool           `json:"closed"`
 	Thinking    []ContentChunk `json:"thinking"`
 }
 
-var _ ContentChunk = (*ThinkContent)(nil)
-var _ json.Unmarshaler = (*ThinkContent)(nil)
+var _ ContentChunk = (*ThinkChunk)(nil)
+var _ json.Unmarshaler = (*ThinkChunk)(nil)
 
-func NewThinkContent(thinking ...ContentChunk) *ThinkContent {
-	c := &ThinkContent{
+func NewThinkChunk(thinking ...ContentChunk) *ThinkChunk {
+	c := &ThinkChunk{
 		ContentType: ContentTypeThink,
 		Closed:      true,
 		Thinking:    make([]ContentChunk, 0),
@@ -172,11 +172,11 @@ func NewThinkContent(thinking ...ContentChunk) *ThinkContent {
 	return c
 }
 
-func (c *ThinkContent) Type() ContentType {
+func (c *ThinkChunk) Type() ContentType {
 	return ContentTypeThink
 }
 
-func (c *ThinkContent) UnmarshalJSON(data []byte) error {
+func (c *ThinkChunk) UnmarshalJSON(data []byte) error {
 	var res map[string]any
 	if err := json.Unmarshal(data, &res); err != nil {
 		return err
@@ -190,7 +190,7 @@ func (c *ThinkContent) UnmarshalJSON(data []byte) error {
 
 		switch t["type"].(string) {
 		case ContentTypeText.String():
-			c.Thinking[i] = NewTextContent(t["text"].(string))
+			c.Thinking[i] = NewTextChunk(t["text"].(string))
 
 		case ContentTypeReference.String():
 			refIds, exists := t["reference_ids"]
@@ -200,7 +200,7 @@ func (c *ThinkContent) UnmarshalJSON(data []byte) error {
 					refIdsSlice = append(refIdsSlice, int(refId.(float64)))
 				}
 			}
-			c.Thinking[i] = NewReferenceContent(refIdsSlice...)
+			c.Thinking[i] = NewReferenceChunk(refIdsSlice...)
 		}
 	}
 
@@ -213,20 +213,25 @@ func (c *ThinkContent) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type AudioContent struct {
+type AudioChunk struct {
 	ContentType ContentType `json:"type"`
 	InputAudio  string      `json:"input_audio"`
 }
 
-var _ ContentChunk = (*AudioContent)(nil)
+var _ ContentChunk = (*AudioChunk)(nil)
 
-func NewAudioContent(inputAudio string) *AudioContent {
-	return &AudioContent{
+// NewAudioChunk creates a new audio content chunk.
+// Input audio can be:
+//   - a URL to an audio file hosted on the internet
+//   - a base64 encoded audio file
+//   - URl of an uploaded audio file on La Plateforme
+func NewAudioChunk(inputAudio string) *AudioChunk {
+	return &AudioChunk{
 		ContentType: ContentTypeAudio,
 		InputAudio:  inputAudio,
 	}
 }
 
-func (c *AudioContent) Type() ContentType {
+func (c *AudioChunk) Type() ContentType {
 	return ContentTypeAudio
 }

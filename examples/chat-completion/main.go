@@ -48,7 +48,7 @@ Specifications:
 
 	msg := res.AssistantMessage()
 	if msg != nil {
-		fmt.Println(msg.Content)
+		fmt.Println(msg.MessageContent)
 	} else {
 		panic("No assistant message found")
 	}

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -51,6 +52,14 @@ func (m *BaseModelCard) Match(cap *ModelCapabilities) bool {
 		(!cap.FineTuning || m.Capabilities.FineTuning) &&
 		(!cap.Moderation || m.Capabilities.Moderation) &&
 		(!cap.Ocr || m.Capabilities.Ocr)
+}
+
+func (m *BaseModelCard) HasNoCapabilities() bool {
+	return m.Capabilities == (ModelCapabilities{})
+}
+
+func (m *BaseModelCard) IsEmbedding() bool {
+	return strings.Contains(m.Id, "embed")
 }
 
 type listModelResponse struct {
