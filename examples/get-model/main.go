@@ -21,7 +21,7 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Printf("%+v\n", model.Capabilities)
+	fmt.Printf("%s (%s): %+v\n", model.Id, model.Description, model.Capabilities)
 
 	_, err = client.GetModel(context.Background(), "model-not-found")
 	if err != nil {
