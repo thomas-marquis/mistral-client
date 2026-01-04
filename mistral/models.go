@@ -59,10 +59,7 @@ func (m *BaseModelCard) HasNoCapabilities() bool {
 }
 
 func (m *BaseModelCard) IsEmbedding() bool {
-	if strings.Contains(m.Id, "embed") {
-		return true
-	}
-	return false
+	return strings.Contains(m.Id, "embed")
 }
 
 type listModelResponse struct {
