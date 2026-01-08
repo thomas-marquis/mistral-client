@@ -6,6 +6,7 @@ repo_name: thomas-marquis/mistral-client
 site_author: Thomas Marquis
 theme:
   name: material
+  language: en
   features:
     - content.code.copy
     - content.code.annotate
@@ -61,3 +62,7 @@ extra:
       link: https://github.com/thomas-marquis
     - icon: fontawesome/brands/linkedin
       link: https://www.linkedin.com/in/thomas-marquis-contact
+plugins:
+  - privacy:
+      links_attr_map:
+        target: _blank

@@ -194,8 +194,81 @@ There are two types of content for a message:
 The easiest way to create a simple string message is to use the functions:
 - `NewUserMessageFromString`
 - `NewSystemMessageFromString`
+- `NewAssistantMessageFromString`
 
-You can also use 
+### Chunks
+
+If you want to use multimodal features (like images or audio), or if you want to provide more complex content, you can use chunks.
+
+```go
+mistral.NewUserMessage(mistral.ContentChunks{
+    mistral.NewTextChunk("Describe this image:"),
+    mistral.NewImageUrlChunk("https://example.com/image.jpg"),
+})
+```
+
+Supported chunks:
+- `TextChunk`: a simple text block.
+- `ImageUrlChunk`: a link to an image.
+- `AudioChunk`: a base64 encoded audio string.
+- `DocumentUrlChunk`: a link to a document.
+- `FileChunk`: a reference to a file uploaded to Mistral.
+
+## Handling the response
+
+The `ChatCompletion` method returns a `ChatCompletionResponse`.
+You can use the `AssistantMessage` method to easily get the assistant's response.
+
+```go
+res, err := client.ChatCompletion(ctx, req)
+if err != nil {
+    panic(err)
+}
+
+msg := res.AssistantMessage()
+fmt.Println(msg.Content().String())
+```
+
+If the model used tools, you can check the `ToolCalls` attribute of the assistant message.
+
+```go
+if len(msg.ToolCalls) > 0 {
+    for _, call := range msg.ToolCalls {
+        fmt.Printf("Function %s called with arguments: %v\n", 
+            call.Function.Name, call.Function.Arguments)
+    }
+}
+```
+
+## Tools / Function calling
+
+To use tools, you first need to define them and then pass them to the request using the `WithTools` option.
+
+```go
+tool := mistral.NewTool("get_weather", "Get the weather in a location", map[string]any{
+    "type": "object",
+    "properties": map[string]any{
+        "location": map[string]any{
+            "type": "string",
+            "description": "The city and state, e.g. San Francisco, CA",
+        },
+    },
+    "required": []string{"location"},
+})
+
+req := mistral.NewChatCompletionRequest("mistral-small-latest",
+    messages,
+    mistral.WithTools([]mistral.Tool{tool}),
+)
+```
+
+You can also control how the model uses tools with `WithToolChoice`:
+
+```go
+mistral.WithToolChoice(mistral.ToolChoiceAny) // Force use of any tool
+mistral.WithToolChoice(mistral.ToolChoiceNone) // Disable tools
+mistral.WithToolChoice(mistral.ToolChoiceAuto) // Let the model decide (default)
+```
 
 ## Links
 

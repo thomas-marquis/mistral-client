@@ -35,6 +35,16 @@ client := mistral.New(apiKey,
 )
 ```
 
+### Available Client Options
+
+- `WithClientTimeout(timeout time.Duration)`: Sets the timeout for the HTTP client.
+- `WithBaseApiUrl(baseURL string)`: Sets the base URL for the Mistral API (default: `https://api.mistral.ai`).
+- `WithRateLimiter(rateLimiter *rate.Limiter)`: Sets a rate limiter for the client.
+- `WithVerbose(verbose bool)`: Enables or disables verbose logging.
+- `WithRetry(maxRetries int, waitMin, waitMax time.Duration)`: Configures retry logic.
+- `WithRetryStatusCodes(codes ...int)`: Sets the HTTP status codes that should trigger a retry.
+- `WithClientTransport(t http.RoundTripper)`: Sets a custom HTTP transport.
+
 Then you can use it to call the Mistral API. For example, to create a chat completion:
 
 ```go
@@ -55,14 +65,14 @@ fmt.Println(res.AssistantMessage().MessageContent)
 
 You can find more detailed examples in the `examples` folder:
 
-- [Chat Completion](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-completion): Basic usage of the chat completion API.
-- [Chat Completion (Advanced)](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-completion-advanced): Advanced options like retry, rate limiting, and timeout.
-- [Chat Audio](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-audio): Transcribe and interact with audio files.
-- [Chat Vision](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-vision): Interact with images.
-- [Embeddings](https://github.com/thomas-marquis/mistral-client/tree/main/examples/embedding): Generate text embeddings.
-- [Get Model](https://github.com/thomas-marquis/mistral-client/tree/main/examples/get-model): Retrieve details for a specific model.
-- [List Models](https://github.com/thomas-marquis/mistral-client/tree/main/examples/list-models): List and search available models.
-- [Tools / Function Calling](https://github.com/thomas-marquis/mistral-client/tree/main/examples/tools): Use tools and function calling.
+- [Chat Completion](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-completion/main.go): Basic usage of the chat completion API.
+- [Chat Completion (Advanced)](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-completion-advanced/main.go): Advanced options like retry, rate limiting, and timeout.
+- [Chat Audio](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-audio/main.go): Transcribe and interact with audio files.
+- [Chat Vision](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-vision/main.go): Interact with images.
+- [Embeddings](https://github.com/thomas-marquis/mistral-client/tree/main/examples/embedding/main.go): Generate text embeddings.
+- [Get Model](https://github.com/thomas-marquis/mistral-client/tree/main/examples/get-model/main.go): Retrieve details for a specific model.
+- [List Models](https://github.com/thomas-marquis/mistral-client/tree/main/examples/list-models/main.go): List and search available models.
+- [Tools / Function Calling](https://github.com/thomas-marquis/mistral-client/tree/main/examples/tools/main.go): Use tools and function calling.
 
 ## Useful Links
 
