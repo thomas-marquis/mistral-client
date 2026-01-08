@@ -33,5 +33,4 @@ go.work.sum
 .idea
 /.run
 /site
-.python-version
 /.cache

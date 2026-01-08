@@ -82,12 +82,12 @@ It is the default option (you unlikely need to specify it). Simply instruct the 
 
 - **`WithResponseJsonObjectFormat`**
 
-This option instruct the model that the expected response format is a JSON object but without any specific structure.
-You can specify the expected struture in your prompt.
+This option instructs the model that the expected response format is a JSON object but without any specific structure.
+You can specify the expected structure in your prompt.
 
 - **`WithResponseJsonSchema`**
 
-This option instruct the model that the expected response format is a JSON object with a specific structure.
+This option instructs the model that the expected response format is a JSON object with a specific structure.
 
 Example:
 
@@ -138,9 +138,9 @@ req := mistral.NewChatCompletionRequest("mistral-small-latest",
 The interface `ChatMessage` represent a message sent or received by the model.
 This interface has four implementations:
 - [`SystemMessage`](#system-message)
-- `UserMessage`
-- `AssistantMessage`
-- `ToolMessage`
+- [`UserMessage`](#user-message)
+- [`AssistantMessage`](#assistant-message)
+- [`ToolMessage`](#tool-message)
 
 ### System message
 
