@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+         <loc>https://thomas-marquis.github.io/</loc>
+         <lastmod>2026-01-08</lastmod>
+    </url>
+    <url>
+         <loc>https://thomas-marquis.github.io/features/chat-completion/</loc>
+         <lastmod>2026-01-08</lastmod>
+    </url>
+    <url>
+         <loc>https://thomas-marquis.github.io/features/embeddings/</loc>
+         <lastmod>2026-01-08</lastmod>
+    </url>
+    <url>
+         <loc>https://thomas-marquis.github.io/features/models/</loc>
+         <lastmod>2026-01-08</lastmod>
+    </url>
+</urlset>
