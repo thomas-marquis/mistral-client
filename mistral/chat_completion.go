@@ -1,10 +1,14 @@
 package mistral
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -227,6 +231,13 @@ func WithToolChoice(toolChoice ToolChoiceType) ChatCompletionRequestOption {
 	}
 }
 
+// WithStreaming enables streaming back partial progress.
+func WithStreaming() ChatCompletionRequestOption {
+	return func(req *ChatCompletionRequest) {
+		req.Stream = true
+	}
+}
+
 // ChatCompletion send a /chat/completion request to Mistral API and return the response.
 // Messages is(are) the prompt(s) to generate completions for, encoded as a list of dict with role and content.
 // Model is the name of the model to use (e.g. "mistral-small-latest"). You can use the ListModels method to see all of your available models, or see https://docs.mistral.ai/getting-started/models overview for model descriptions.
@@ -268,4 +279,125 @@ func (c *clientImpl) ChatCompletion(
 	resp.Latency = lat
 
 	return &resp, nil
+}
+
+type CompletionResponseStreamChoice struct {
+	FinishReason FinishReason      `json:"finish_reason"`
+	Index        int               `json:"index"`
+	Delta        *AssistantMessage `json:"delta"`
+}
+
+type CompletionChunk struct {
+	Choices []CompletionResponseStreamChoice `json:"choices"`
+	Created time.Time                        `json:"created"`
+	Id      string                           `json:"id"`
+	Model   string                           `json:"model"`
+	Object  string                           `json:"object"`
+	Usage   UsageInfo                        `json:"usage"`
+
+	IsLastChunk  bool          `json:"-"`
+	ChunkLatency time.Duration `json:"-"`
+	TotalLatency time.Duration `json:"-"`
+	Error        error         `json:"-"`
+}
+
+var _ json.Unmarshaler = (*CompletionChunk)(nil)
+
+func (c *CompletionChunk) UnmarshalJSON(data []byte) error {
+	type Alias CompletionChunk
+	aux := &struct {
+		*Alias
+		Created int64 `json:"created"`
+	}{
+		Alias: (*Alias)(c),
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	c.Created = time.Unix(aux.Created, 0).UTC()
+	return nil
+}
+
+func (c *CompletionChunk) DeltaMessage() AssistantMessage {
+	if len(c.Choices) == 0 {
+		return AssistantMessage{}
+	}
+	return *c.Choices[0].Delta
+}
+
+func (c *clientImpl) ChatCompletionStream(ctx context.Context, req *ChatCompletionRequest) (<-chan *CompletionChunk, error) {
+	if c.limiter != nil {
+		if err := c.limiter.Wait(ctx); err != nil {
+			return nil, err
+		}
+	}
+
+	url := fmt.Sprintf("%s/v1/chat/completions", c.baseURL)
+	if !req.Stream {
+		return nil, fmt.Errorf("the method ChatCompletionStream requires streaming")
+	}
+
+	jsonValue, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request body: %w", err)
+	}
+
+	outChan := make(chan *CompletionChunk)
+
+	res, lat, err := c.sendRequest(ctx, http.MethodPost, url, jsonValue)
+	if err != nil {
+		return nil, err
+	}
+
+	go func() {
+		defer close(outChan)
+		defer res.Body.Close()
+
+		buff := bufio.NewReader(res.Body)
+
+		var t0 time.Time
+		var i uint
+		totLat := lat
+		for {
+			t0 = time.Now()
+			line, err := buff.ReadBytes('\n')
+			lat += time.Since(t0)
+			if err != nil {
+				if err == io.EOF {
+					return
+				}
+				outChan <- &CompletionChunk{Error: fmt.Errorf("failed to read response line: %w", err)}
+				return
+			}
+
+			if !bytes.HasPrefix(line, []byte("data: ")) {
+				continue
+			}
+
+			jsonPart := strings.TrimSpace(
+				strings.TrimPrefix(string(line), "data: "))
+
+			if jsonPart == "[DONE]" {
+				return
+			}
+			var chunk CompletionChunk
+			if err := json.Unmarshal([]byte(jsonPart), &chunk); err != nil {
+				outChan <- &CompletionChunk{
+					Error: fmt.Errorf("failed to unmarshal response chunk %d '%s': %w", i, jsonPart, err)}
+				return
+			}
+			chunk.ChunkLatency = lat
+			totLat += lat
+			lat = 0
+			if len(chunk.Choices) > 0 && chunk.Choices[0].FinishReason != "" {
+				chunk.IsLastChunk = true
+				chunk.TotalLatency = totLat
+			}
+			outChan <- &chunk
+			i++
+		}
+	}()
+
+	return outChan, nil
+
 }

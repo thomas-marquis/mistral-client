@@ -167,7 +167,7 @@ func (m *AssistantMessage) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	m.MessageRole = Role(res["role"].(string))
+	m.MessageRole = RoleAssistant
 
 	if tcs, ok := res["tool_calls"]; ok && tcs != nil {
 		m.ToolCalls = make([]ToolCall, len(tcs.([]any)))
