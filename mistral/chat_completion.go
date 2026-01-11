@@ -357,7 +357,7 @@ func (c *clientImpl) ChatCompletionStream(ctx context.Context, req *ChatCompleti
 
 	go func() {
 		defer close(outChan)
-		defer res.Body.Close()
+		defer res.Body.Close() //nolint:errcheck
 
 		buff := bufio.NewReader(res.Body)
 
