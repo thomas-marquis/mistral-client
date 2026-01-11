@@ -227,7 +227,6 @@ func (c *clientImpl) sendRequest(ctx context.Context, method, url string, body [
 		}
 
 		req.Header.Set("Authorization", "Bearer "+c.apiKey)
-		//req.Header.Set("Accept", "application/json; charset=utf-8")
 		req.Header.Set("Content-Type", "application/json; charset=utf-8")
 
 		t0 := time.Now()

@@ -110,6 +110,12 @@ func NewChatCompletionRequest(model string, messages []ChatMessage, opts ...Chat
 	return r
 }
 
+func NewChatCompletionStreamRequest(model string, messages []ChatMessage, opts ...ChatCompletionRequestOption) *ChatCompletionRequest {
+	r := NewChatCompletionRequest(model, messages, opts...)
+	r.Stream = true
+	return r
+}
+
 type ChatCompletionResponse struct {
 	Choices []ChatCompletionChoice `json:"choices"`
 	Created time.Time              `json:"created"`
