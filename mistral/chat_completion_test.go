@@ -397,3 +397,76 @@ func TestChatCompletionResponse(t *testing.T) {
 		assert.Equal(t, time.Date(2025, time.November, 27, 21, 18, 59, 0, time.UTC), tc.Created)
 	})
 }
+
+func TestClientImpl_ChatCompletionStream(t *testing.T) {
+	t.Run("Should call Mistral /chat/completion endpoint", func(t *testing.T) {
+		// Given
+		var gotReq string
+		mockServer := makeMockSseServerWithCapture(t, "POST", "/v1/chat/completions",
+			[]string{
+				`data: {"id":"aa","object":"chat.completion.chunk","created":1768084548,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}`,
+				`data: {"id":"aa","object":"chat.completion.chunk","created":1768084548,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":"Hello "},"finish_reason":null}]}`,
+				`data: {"id":"aa","object":"chat.completion.chunk","created":1768084548,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":"world! "},"finish_reason":null}]}`,
+				`data: {"id":"aa","object":"chat.completion.chunk","created":1768084548,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":""},"finish_reason":"stop"}],"usage":{"prompt_tokens":3,"total_tokens":5,"completion_tokens":2}}`,
+				`data: [DONE]`,
+			},
+			http.StatusOK, &gotReq)
+		defer mockServer.Close()
+
+		ctx := context.TODO()
+		c := mistral.New("fakeApiKey", mistral.WithBaseApiUrl(mockServer.URL))
+		inputMsgs := []mistral.ChatMessage{
+			mistral.NewSystemMessageFromString("You are a helpful assistant."),
+			mistral.NewUserMessageFromString("Hello!"),
+		}
+
+		// When
+		res, err := c.ChatCompletionStream(ctx, mistral.NewChatCompletionStreamRequest("mistral-small-latest", inputMsgs))
+
+		// Then
+		assert.NoError(t, err)
+
+		var chunks []*mistral.CompletionChunk
+		for evt := range res {
+			chunks = append(chunks, evt)
+		}
+		assert.Equal(t, 4, len(chunks))
+
+		assert.Equal(t, "", chunks[0].Choices[0].Delta.Content().String())
+		assert.Equal(t, "Hello ", chunks[1].Choices[0].Delta.Content().String())
+		assert.Equal(t, "world! ", chunks[2].Choices[0].Delta.Content().String())
+
+		lastChunk := chunks[3]
+		lastMessage := lastChunk.DeltaMessage()
+		assert.Equal(t, "", lastMessage.Content().String())
+
+		assert.Equal(t, 3, lastChunk.Usage.PromptTokens)
+		assert.Equal(t, 2, lastChunk.Usage.CompletionTokens)
+		assert.Equal(t, 5, lastChunk.Usage.TotalTokens)
+		assert.Equal(t, mistral.FinishReasonStop, lastChunk.Choices[0].FinishReason)
+
+		for _, c := range chunks {
+			assert.Equal(t, "mistral-small-latest", c.Model)
+			assert.Equal(t, "aa", c.Id)
+			assert.Equal(t, time.Date(2026, time.January, 10, 22, 35, 48, 0, time.UTC), c.Created)
+			assert.Equal(t, "chat.completion.chunk", c.Object)
+		}
+
+		expectedReq := `{
+		  "model": "mistral-small-latest",
+		  "messages": [
+			{
+			  "role": "system",
+			  "content": "You are a helpful assistant."
+			},
+			{
+			  "role": "user",
+			  "content": "Hello!"
+			}
+		  ],
+		  "parallel_tool_calls": true,
+          "stream": true
+		}`
+		assert.JSONEq(t, expectedReq, gotReq)
+	})
+}
