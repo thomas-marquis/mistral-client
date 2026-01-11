@@ -18,11 +18,10 @@ func main() {
 	client := mistral.New(apiKey, mistral.WithClientTimeout(25*time.Second))
 
 	ctx := context.Background()
-	req := mistral.NewChatCompletionRequest("mistral-small-latest",
+	req := mistral.NewChatCompletionStreamRequest("mistral-small-latest",
 		[]mistral.ChatMessage{
 			mistral.NewUserMessageFromString("Tell me a joke."),
-		},
-		mistral.WithStreaming())
+		})
 	resChan, err := client.ChatCompletionStream(ctx, req)
 	if err != nil {
 		panic(err)
