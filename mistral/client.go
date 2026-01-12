@@ -132,7 +132,7 @@ func WithRetry(maxRetries int, waitMin, waitMax time.Duration) Option {
 		waitMin = 200 * time.Millisecond
 	}
 	if waitMax == 0 {
-		waitMax = 2 * time.Second
+		waitMax = 1 * time.Second
 	}
 	if waitMin > waitMax {
 		waitMin, waitMax = waitMax, waitMin
