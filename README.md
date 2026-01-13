@@ -1,8 +1,8 @@
 # mistral-client
 
-HTTP client for Mistral AI written in Go.
+HTTP client for Mistral AI written in Go. 🚀
 
-## Installation
+## 📦 Installation
 
 ### Requirements
 
@@ -14,15 +14,15 @@ HTTP client for Mistral AI written in Go.
 go get github.com/thomas-marquis/mistral-client
 ```
 
-## Documentation
+## 📚 Documentation
 
 - [Project Documentation](https://thomas-marquis.github.io/mistral-client/)
 - [Go Package Documentation](https://pkg.go.dev/github.com/thomas-marquis/mistral-client)
 - [Mistral AI API Documentation](https://docs.mistral.ai/)
 
-## Usage
+## 💻 Usage
 
-### Client Initialization
+### 🔧 Client Initialization
 
 ```go
 import "github.com/thomas-marquis/mistral-client/mistral"
@@ -30,7 +30,7 @@ import "github.com/thomas-marquis/mistral-client/mistral"
 client := mistral.New(apiKey)
 ```
 
-### Chat Completion
+### 💬 Chat Completion
 
 ```go
 req := mistral.NewChatCompletionRequest("mistral-small-latest", []mistral.ChatMessage{
@@ -45,7 +45,7 @@ if err != nil {
 fmt.Println(res.AssistantMessage().Content().String())
 ```
 
-### Tool Calling
+### 🛠️ Tool Calling
 
 ```go
 tools := []mistral.Tool{
@@ -64,7 +64,7 @@ req := mistral.NewChatCompletionRequest("mistral-small-latest", []mistral.ChatMe
 res, err := client.ChatCompletion(context.Background(), req)
 ```
 
-### Embeddings
+### 🔢 Embeddings
 
 ```go
 req := mistral.NewEmbeddingRequest("mistral-embed", []string{"Mistral AI is awesome!"})
@@ -79,6 +79,6 @@ for _, vector := range res.Embeddings() {
 }
 ```
 
-## Contribute
+## 🤝 Contribute
 
-All contributions are welcome! Feel free to open an issue or submit a PR.
+All contributions are welcome! Feel free to open an issue or submit a PR. ✨

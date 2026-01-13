@@ -102,6 +102,7 @@ You can find more detailed examples in the `examples` folder:
 
 - [Chat Completion](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-completion/main.go): Basic usage of the chat completion API.
 - [Chat Completion (Advanced)](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-completion-advanced/main.go): Advanced options like retry, rate limiting, and timeout.
+- [Chat completion (with structured output)](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-completion-constrained/main.go)
 - [Chat Audio](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-audio/main.go): Transcribe and interact with audio files.
 - [Chat Vision](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-vision/main.go): Interact with images.
 - [Embeddings](https://github.com/thomas-marquis/mistral-client/tree/main/examples/embedding/main.go): Generate text embeddings.
