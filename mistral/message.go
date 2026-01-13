@@ -2,6 +2,7 @@ package mistral
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 )
 
@@ -180,6 +181,20 @@ func (m *AssistantMessage) UnmarshalJSON(data []byte) error {
 	}
 
 	return nil
+}
+
+// Output deserializes the message JSON content to the target pointer.
+// Returns an error if the message content is not compatible with the target type.
+// Use this method ONLY if you are sure the model answered a JSON.
+// You can use one of these two options in the request:
+//   - mistral.WithResponseJsonObjectFormat() + specifying the desired structure in your prompt
+//   - or mistral.WithResponseJsonSchema(propertyDef)
+func (m *AssistantMessage) Output(target any) error {
+	c := m.MessageContent.String()
+	if c == "" {
+		return errors.New("unmarshalling impossible, the message content is empty")
+	}
+	return json.Unmarshal([]byte(c), target)
 }
 
 type ToolMessage struct {

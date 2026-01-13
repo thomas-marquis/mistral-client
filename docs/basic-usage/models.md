@@ -1,4 +1,4 @@
-# Models
+# List and Search models
 
 Explore the Mistral's model catalogue and find information about the models.
 
@@ -20,7 +20,7 @@ import (
 func main() {
     client := mistral.New("API_KEY")
 
-    models, err := client.ListModels(context.Background())
+    models, err := client.ListModels(context.Background()) // (1)
     if err != nil {
         panic(err)
     }
@@ -31,15 +31,21 @@ func main() {
 }
 ```
 
+1. This method lists all the models available on the Mistral platform.
+   Each model is represented by the `mistral.BaseModelCard` struct.
+
 ## Search models
 
 You can also filter models by their capabilities.
 
 ```go
 filtered, err := client.SearchModels(context.Background(), &mistral.ModelCapabilities{
-    Audio: true,
+    Audio: true, // (1)
 })
 ```
+
+1. This filter will return only models that support audio processing.
+   Check the `mistral.ModelCapabilities` struct for all the available options.
 
 ## Get model details
 

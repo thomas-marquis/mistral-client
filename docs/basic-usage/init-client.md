@@ -1,4 +1,4 @@
-# Init client
+# Initialize the client
 
 The very first step to use this library is to create a `Client` instance.
 
@@ -13,9 +13,13 @@ client := mistral.New(apiKey)
 You can tune your client with some options. For example:
 
 ```go
-apiKey := os.Getenv("MISTRAL_API_KEY")
+import "time"
 
-client := mistral.New(apiKey)
+...
+
+client := mistral.New(apiKey
+    mistral.WithClientTimeout(60 * time.Second),
+    mistral.WithVerbose(true))
 ```
 
 The complete list of available is available [here](../references/client.md#available-options).

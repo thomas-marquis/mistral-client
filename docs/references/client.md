@@ -1,6 +1,8 @@
 # Client
 
-Create a new client with the `.mistral.New` function.
+## Creating a client
+
+Create a new client with the `mistral.New` function.
 
 **Arguments:** 
 

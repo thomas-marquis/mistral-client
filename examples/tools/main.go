@@ -9,6 +9,20 @@ import (
 	"github.com/thomas-marquis/mistral-client/mistral"
 )
 
+func writeFile(content string, filename string) {
+	fmt.Printf("Writing file %s with content:\n%s\n", filename, content)
+}
+
+func callTool(toolName string, args map[string]any) (any, error) {
+	switch toolName {
+	case "write_file":
+		writeFile(args["content"].(string), args["filename"].(string))
+		return nil, nil
+	default:
+		return nil, fmt.Errorf("unknown tool: %s", toolName)
+	}
+}
+
 func main() {
 	apiKey := os.Getenv("MISTRAL_API_KEY")
 	if apiKey == "" {
@@ -34,19 +48,17 @@ Call the tool write_file to write the code the user ask your to write.`
 			mistral.NewTool(
 				"write_file",
 				"Write a file with the given content",
-				map[string]any{
-					"type": "object",
-					"properties": map[string]any{
-						"content": map[string]any{
-							"type":        "string",
-							"description": "The content to write in the file",
+				mistral.NewObjectPropertyDefinition(
+					map[string]mistral.PropertyDefinition{
+						"content": {
+							Type:        "string",
+							Description: "The content to write in the file",
 						},
-						"filename": map[string]any{
-							"type":        "string",
-							"description": "The filename with extension to write in the current working directory",
+						"filename": {
+							Type:        "string",
+							Description: "The filename with extension to write in the current working directory",
 						},
-					},
-				},
+					}),
 			),
 		}))
 	req.MaxTokens = 128_000
@@ -60,7 +72,7 @@ Call the tool write_file to write the code the user ask your to write.`
 		fmt.Printf("MessageContent:\n%s\n", msg.MessageContent)
 		if len(msg.ToolCalls) > 0 {
 			for _, call := range msg.ToolCalls {
-				fmt.Printf("Function %s called with arguments:\n%+v\n", call.Function.Name, call.Function.Arguments)
+				callTool(call.Function.Name, call.Function.Arguments)
 			}
 		}
 	} else {

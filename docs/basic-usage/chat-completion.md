@@ -1,12 +1,51 @@
-# Chat completion
+# Perform a basic chat completion
 
-Chat completion is the most basic use case for an AI client.
-Each call needs (at least) a message list as input and returns the assistant message in the response.
+Chat completion consists of exchanging messages between a user and an assistant. 
+Each message is composed of a role (system, user, assistant or response) and a content.
 
-Call the `ChatCompltion` method from a `Client` instance.
+We send a list of messages to the API and receive the next message from the assistant.
 
-This method expects two arguments: a context and a request (`ChatCompletionRequest`).
-You can build the request with the function `NewChatCompletionRequest`.
+**Important**: The messages order matters. The API expects that:
+- the first message is a user or a system message
+- the last message is a user or a tool message
+
+## Sending a request
+
+The first step to perform a chat completion is to create a request:
+
+```go
+req := mistral.NewChatCompletionRequest("mistral-small-latest", // (1)
+   []mistral.ChatMessage{
+   mistral.NewUserMessageFromString("Tell me a joke about cats"),
+}) // (2)
+```
+
+1. The model to use. You need a model with the `CompletionChat` capability.
+2. A list of messages to send. You have to respect the order of the messages (\[system/\]user/assistant/...).
+
+
+Then, call the `ChatCompletion` from your client's instance method with the request:
+
+```go
+client := mistral.New("<your_api_key>")
+
+res, err := client.ChatCompletion(ctx, req)
+```
+
+Check there is no error and get the assistant message:
+
+```go
+if err != nil {
+	// handle error
+}
+am := res.AssistantMessage() // (1)
+```
+
+1. To get the assistant message, you can either use the `AssistantMessage` method or the `Chices[0].Message` attribute.
+   It's a pointer.
+
+
+Complete example:
 
 ```go
 package main
@@ -22,27 +61,24 @@ func main() {
 	client := mistral.New("API_KEY")
 
 	ctx := context.Background()
-	req := mistral.NewChatCompletionRequest("mistral-small-latest", // (1)
+	req := mistral.NewChatCompletionRequest("mistral-small-latest",
 		[]mistral.ChatMessage{
 			mistral.NewUserMessageFromString("Tell me a joke about cats"),
-		}) // (2)
+		})
 	res, err := client.ChatCompletion(ctx, req)
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println(res.AssistantMessage().Content().String()) // (3)
+	am := res.AssistantMessage()
+	fmt.Println(am.Content().String())
 }
 ```
 
-1. The model to use. You need a model with the `CompletionChat` capability.
-2. A list of messages to send. You have to respect the order of the messages (\[system/\]user/assistant/...).
-3. To get the assistant message, you can either use the `AssistantMessage` method or the `Chices[0].Message` attribute.
-   It's a pointer.
+## Customize the request
 
-## Creating the request
-
-As shown above, create the request with the `NewChatCompletionRequest` function.
+As shown above, the request can be created with the `NewChatCompletionRequest` function.
+It returns a `mistral.ChatCompletionRequest` object. 
 
 This function takes at least two arguments:
 
@@ -51,7 +87,7 @@ This function takes at least two arguments:
 -  The list of messages to send. This list **must** respect the order of the messages (\[system/\]user/assistant/...). System message is optional.
    See below for more information about messages.
 
-You can then specify a list of options (`ChatCompletionRequestOption`) to customize the request.
+You can customize the request either by using options (`ChatCompletionRequestOption`) or setting the request's exported fields directly.
 
 ```go
 req := mistral.NewChatCompletionRequest("mistral-small-latest",
@@ -64,37 +100,8 @@ req := mistral.NewChatCompletionRequest("mistral-small-latest",
 			mistral.NewImageChunk("https://example.com/image.jpg"),
 	})
 }
+
+req.MaxTokens = 100
 ```
 
 See available options [here](../references/chat-completion.md#options)
-
-### Specify a response format
-
-- **`WithResponseTextFormat`**
-
-It is the default option (you unlikely need to specify it). Simply instruct the model that the expected response format is a text (without any specific structure, unless if it is specified in the prompt).
-
-- **`WithResponseJsonObjectFormat`**
-
-This option instructs the model that the expected response format is a JSON object but without any specific structure.
-You can specify the expected structure in your prompt.
-
-- **`WithResponseJsonSchema`**
-
-This option instructs the model that the expected response format is a JSON object with a specific structure.
-
-Example:
-
-```go
-req := mistral.NewChatCompletionRequest("mistral-small-latest",
-	messages,
-	mistral.WithResponseJsonSchema(map[string]any{
-		"type": "object",
-		"properties": map[string]any{
-			"answer": map[string]any{
-				"type": "string",
-			},
-		},
-    }),
-)
-```

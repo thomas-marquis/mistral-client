@@ -56,16 +56,19 @@ markdown_extensions:
 
 nav:
   - Getting started: index.md
+  - Basic usage:
+      - Initialize the client: basic-usage/init-client.md
+      - Perform a basic chat completion: basic-usage/chat-completion.md
+      - Constraint the output format: basic-usage/structured.md
+      - Call tools: basic-usage/tool-calling.md
+      - List and Search models: basic-usage/models.md
+      - Embed a text: basic-usage/embed.md
+  - Advanced usage:
+      - Complex input data: advanced-usage/complex-input.md
+      - "Testing: mock the client": advanced-usage/mock.md
+      - Rate limiting: advanced-usage/rate-limiting.md
   - Concepts:
       - Content types: concepts/content-types.md
-  - Basic usage:
-      - Init client: basic-usage/init-client.md
-      - Chat completion: basic-usage/chat-completion.md
-      - Tool calling: basic-usage/tool-calling.md
-      - Models: features/models.md
-  - Features:
-      - Chat completion: features/chat-completion.md
-      - Embeddings: features/embeddings.md
   - References:
       - Client: references/client.md
       - Chat completion: references/chat-completion.md

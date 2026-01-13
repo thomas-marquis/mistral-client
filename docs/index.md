@@ -16,6 +16,16 @@ HTTP client for Mistral AI written in Go.
 go get github.com/thomas-marquis/mistral-client
 ```
 
+## Features
+
+- **Chat Completion**: Synchronous and streaming support.
+- **Embeddings**: Generate text embeddings with various encoding formats and dimensions.
+- **Tool Calling**: Native support for function calling and tool usage.
+- **Multi-modal Input**: Handle images, audio, and documents in your messages.
+- **Structured Output**: Support for JSON Mode and JSON Schema.
+- **Advanced Client**: Built-in retry logic, rate limiting, and custom HTTP client configuration.
+- **Model Management**: List, search, and retrieve details for Mistral models.
+
 ## Getting Started
 
 To start using the Mistral client, you first need to create an instance of the client with your API key:
@@ -35,30 +45,55 @@ client := mistral.New(apiKey,
 )
 ```
 
-### Available Client Options
+## Basic Usage
 
-- `WithClientTimeout(timeout time.Duration)`: Sets the timeout for the HTTP client.
-- `WithBaseApiUrl(baseURL string)`: Sets the base URL for the Mistral API (default: `https://api.mistral.ai`).
-- `WithRateLimiter(rateLimiter *rate.Limiter)`: Sets a rate limiter for the client.
-- `WithVerbose(verbose bool)`: Enables or disables verbose logging.
-- `WithRetry(maxRetries int, waitMin, waitMax time.Duration)`: Configures retry logic.
-- `WithRetryStatusCodes(codes ...int)`: Sets the HTTP status codes that should trigger a retry.
-- `WithClientTransport(t http.RoundTripper)`: Sets a custom HTTP transport.
-
-Then you can use it to call the Mistral API. For example, to create a chat completion:
+### Chat Completion
 
 ```go
-req := mistral.NewChatCompletionRequest(
-    "mistral-small-latest",
-    []mistral.ChatMessage{
-        mistral.NewUserMessageFromString("Hello, how are you?"),
-    })
+req := mistral.NewChatCompletionRequest("mistral-small-latest", []mistral.ChatMessage{
+    mistral.NewUserMessageFromString("Hello! How are you today?"),
+})
+
 res, err := client.ChatCompletion(context.Background(), req)
 if err != nil {
-    // handle error
+    log.Fatal(err)
 }
 
-fmt.Println(res.AssistantMessage().MessageContent)
+fmt.Println(res.AssistantMessage().Content().String())
+```
+
+### Tool Calling
+
+```go
+tools := []mistral.Tool{
+    mistral.NewTool("get_weather", "Get the weather for a location", mistral.PropertyDefinition{
+        Type: "object",
+        Properties: map[string]mistral.PropertyDefinition{
+            "location": {Type: "string", Description: "The city and state, e.g. San Francisco, CA"},
+        },
+    }),
+}
+
+req := mistral.NewChatCompletionRequest("mistral-small-latest", []mistral.ChatMessage{
+    mistral.NewUserMessageFromString("What's the weather in Paris?"),
+}, mistral.WithTools(tools))
+
+res, err := client.ChatCompletion(context.Background(), req)
+```
+
+### Embeddings
+
+```go
+req := mistral.NewEmbeddingRequest("mistral-embed", []string{"Mistral AI is awesome!"})
+
+res, err := client.Embeddings(context.Background(), req)
+if err != nil {
+    log.Fatal(err)
+}
+
+for _, vector := range res.Embeddings() {
+    fmt.Println(vector)
+}
 ```
 
 ## Examples
@@ -76,5 +111,6 @@ You can find more detailed examples in the `examples` folder:
 
 ## Useful Links
 
+- [Go package documentation](https://pkg.go.dev/github.com/thomas-marquis/mistral-client)
 - [GitHub Repository](https://github.com/thomas-marquis/mistral-client)
 - [Mistral AI API Documentation](https://docs.mistral.ai/)
