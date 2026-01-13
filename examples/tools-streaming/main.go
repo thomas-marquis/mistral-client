@@ -35,19 +35,10 @@ Split the application code in multiple files and write them.`
 			mistral.NewTool(
 				"write_file",
 				"Write a file with the given content",
-				map[string]any{
-					"type": "object",
-					"properties": map[string]any{
-						"content": map[string]any{
-							"type":        "string",
-							"description": "The content to write in the file",
-						},
-						"filename": map[string]any{
-							"type":        "string",
-							"description": "The filename with extension to write in the current working directory",
-						},
-					},
-				},
+				mistral.NewObjectPropertyDefinition(map[string]mistral.PropertyDefinition{
+					"content":  {Type: "string", Description: "The content to write in the file"},
+					"filename": {Type: "string", Description: "The filename with extension to write in the current working directory"},
+				}),
 			),
 		}))
 	req.MaxTokens = 128_000

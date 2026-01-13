@@ -132,25 +132,17 @@ func TestClient_ChatCompletion(t *testing.T) {
 				"mistral-small-latest",
 				inputMsgs,
 				mistral.WithTools([]mistral.Tool{
-					mistral.NewTool("add", "add two numbers", map[string]any{
-						"type": "object",
-						"properties": map[string]any{
-							"a": map[string]any{
-								"type": "number",
-							},
-							"b": map[string]any{
-								"type": "number",
-							},
-						},
-					}),
-					mistral.NewTool("getUserById", "get user by id", map[string]any{
-						"type": "object",
-						"properties": map[string]any{
-							"id": map[string]any{
-								"type": "string",
-							},
-						},
-					}),
+					mistral.NewTool("add", "add two numbers",
+						mistral.NewObjectPropertyDefinition(map[string]mistral.PropertyDefinition{
+							"a": {Type: "number"},
+							"b": {Type: "number"},
+						}),
+					),
+					mistral.NewTool("getUserById", "get user by id",
+						mistral.NewObjectPropertyDefinition(map[string]mistral.PropertyDefinition{
+							"id": {Type: "string"},
+						}),
+					),
 				}),
 				mistral.WithToolChoice(mistral.ToolChoiceAny),
 			),

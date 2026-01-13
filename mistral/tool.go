@@ -56,14 +56,14 @@ type Tool struct {
 	Function Function `json:"function"`
 }
 
-func NewTool(functionName, description string, parameters map[string]any) Tool {
+func NewTool(functionName, description string, parameters PropertyDefinition) Tool {
 	return Tool{
 		Type: "function",
 		Function: Function{
 			Name:        functionName,
 			Description: description,
 			Strict:      false,
-			Parameters:  NewPropertyDefinition(parameters),
+			Parameters:  parameters,
 		},
 	}
 }
@@ -167,6 +167,11 @@ func NewPropertyDefinition(parameters map[string]any) PropertyDefinition {
 	}
 
 	return pd
+}
+
+// NewObjectPropertyDefinition creates a PropertyDefinition with "type": "object" and nested properties.
+func NewObjectPropertyDefinition(properties map[string]PropertyDefinition) PropertyDefinition {
+	return PropertyDefinition{Type: "object", Properties: properties}
 }
 
 // toString provides a best-effort string conversion for simple scalar types.

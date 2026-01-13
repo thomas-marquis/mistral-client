@@ -40,10 +40,10 @@ func (jm *JsonMap) UnmarshalJSON(data []byte) error {
 }
 
 type JsonSchema struct {
-	Name        string `json:"name"`
-	Description string `json:"description,omitempty"`
-	Schema      any    `json:"schema"`
-	Strict      bool   `json:"strict,omitempty"`
+	Name        string             `json:"name"`
+	Description string             `json:"description,omitempty"`
+	Schema      PropertyDefinition `json:"schema"`
+	Strict      bool               `json:"strict,omitempty"`
 }
 
 func mapToStruct(from map[string]any, to any) error {

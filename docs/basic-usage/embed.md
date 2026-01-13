@@ -1,4 +1,5 @@
-# Embeddings
+# Embed a text
+
 
 Embeddings are numerical representations of text that can be used for tasks like semantic search, clustering, or classification.
 
@@ -31,11 +32,13 @@ func main() {
 		panic(err)
 	}
 
-	for _, v := range res.Embeddings() {
+	for _, v := range res.Embeddings() { // (1)
 		fmt.Printf("Embedding: %v\n", v)
 	}
 }
 ```
+
+1. Iterate over the two texts embeddings.
 
 ## Available options
 
@@ -48,9 +51,11 @@ You can customize the embedding request using the following options:
 ```go
 req := mistral.NewEmbeddingRequest("mistral-embed", texts,
     mistral.WithEmbeddingOutputDtype(mistral.EmbeddingOutputDtypeFloat),
-    mistral.WithEmbeddingOutputDimension(512),
+    mistral.WithEmbeddingOutputDimension(512), // (1)
 )
 ```
+
+1. Keep in mind that not all models support custom dimensions.
 
 ## Links
 

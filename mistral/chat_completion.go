@@ -201,7 +201,7 @@ func WithResponseTextFormat() ChatCompletionRequestOption {
 
 // WithResponseJsonSchema ensures the response is formatted according to the specified JSON schema.
 // You MUST also instruct the model to produce JSON yourself with a system or a user message.
-func WithResponseJsonSchema(schema any) ChatCompletionRequestOption {
+func WithResponseJsonSchema(schema PropertyDefinition) ChatCompletionRequestOption {
 	return func(req *ChatCompletionRequest) {
 		req.ResponseFormat = &ResponseFormat{
 			Type: ResponseFormatJsonSchema,

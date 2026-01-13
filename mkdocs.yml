@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://squidfunk.github.io/mkdocs-material/schema.json
 site_name: Mistral Client
-site_url: https://thomas-marquis.github.io
+site_url: https://thomas-marquis.github.io/mistral-client
 repo_url: https://github.com/thomas-marquis/mistral-client
 repo_name: thomas-marquis/mistral-client
 site_author: Thomas Marquis
@@ -48,13 +48,30 @@ markdown_extensions:
   - attr_list
   - md_in_html
   - pymdownx.blocks.caption
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.tabbed:
+      alternate_style: true
 
 nav:
   - Getting started: index.md
-  - Features:
-      - Chat completion: features/chat-completion.md
-      - Embeddings: features/embeddings.md
-      - Models: features/models.md
+  - Basic usage:
+      - Initialize the client: basic-usage/init-client.md
+      - Perform a basic chat completion: basic-usage/chat-completion.md
+      - Constraint the output format: basic-usage/structured.md
+      - Call tools: basic-usage/tool-calling.md
+      - List and Search models: basic-usage/models.md
+      - Embed a text: basic-usage/embed.md
+  - Advanced usage:
+      - Complex input data: advanced-usage/complex-input.md
+      - "Testing: mock the client": advanced-usage/mock.md
+      - Rate limiting: advanced-usage/rate-limiting.md
+  - Concepts:
+      - Content types: concepts/content-types.md
+  - References:
+      - Client: references/client.md
+      - Chat completion: references/chat-completion.md
 
 extra:
   social:
