@@ -29,14 +29,10 @@ func main() {
 				mistral.NewTextChunk(userPrompt),
 			}),
 		},
-		mistral.WithResponseJsonSchema(map[string]any{
-			"type": "object",
-			"properties": map[string]any{
-				"count": map[string]any{
-					"type": "integer",
-				},
-			},
-		}))
+		mistral.WithResponseJsonSchema(mistral.NewObjectPropertyDefinition(map[string]mistral.PropertyDefinition{
+			"count": {Type: "integer"},
+		})),
+	)
 	res, err := client.ChatCompletion(context.Background(), req)
 	if err != nil {
 		panic(err)

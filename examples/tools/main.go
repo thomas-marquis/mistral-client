@@ -72,7 +72,7 @@ Call the tool write_file to write the code the user ask your to write.`
 		fmt.Printf("MessageContent:\n%s\n", msg.MessageContent)
 		if len(msg.ToolCalls) > 0 {
 			for _, call := range msg.ToolCalls {
-				callTool(call.Function.Name, call.Function.Arguments)
+				callTool(call.Function.Name, call.Function.Arguments) //nolint:errcheck
 			}
 		}
 	} else {
