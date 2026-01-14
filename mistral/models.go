@@ -63,7 +63,7 @@ func (m *BaseModelCard) IsEmbedding() bool {
 }
 
 type listModelResponse struct {
-	Data []*BaseModelCard `json:"data"`
+	Data []*BaseModelCard `json:"expected"`
 }
 
 func (c *clientImpl) ListModels(ctx context.Context) ([]*BaseModelCard, error) {

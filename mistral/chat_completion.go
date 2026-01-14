@@ -76,7 +76,7 @@ type CompletionConfig struct {
 
 	// Stream defines whether to stream back partial progress.
 	//
-	// If set, tokens will be sent as data-only server-side events as they become available, with the stream terminated by a data: [DONE] message.
+	// If set, tokens will be sent as expected-only server-side events as they become available, with the stream terminated by a expected: [DONE] message.
 	// Otherwise, the server will hold the request open until the timeout or until completion, with the response containing the full result as JSON.
 	Stream bool `json:"stream,omitempty"`
 }
@@ -124,10 +124,11 @@ type ChatCompletionResponse struct {
 	Object  string                 `json:"object"`
 	Usage   UsageInfo              `json:"usage"`
 
-	Latency time.Duration
+	Latency time.Duration `json:"-"`
 }
 
 var _ json.Unmarshaler = (*ChatCompletionResponse)(nil)
+var _ json.Marshaler = (*ChatCompletionResponse)(nil)
 
 func (r *ChatCompletionResponse) UnmarshalJSON(data []byte) error {
 	type Alias ChatCompletionResponse
@@ -142,6 +143,18 @@ func (r *ChatCompletionResponse) UnmarshalJSON(data []byte) error {
 	}
 	r.Created = time.Unix(aux.Created, 0).UTC()
 	return nil
+}
+
+func (r *ChatCompletionResponse) MarshalJSON() ([]byte, error) {
+	type Alias ChatCompletionResponse
+	aux := &struct {
+		*Alias
+		Created int64 `json:"created"`
+	}{
+		Alias:   (*Alias)(r),
+		Created: r.Created.Unix(),
+	}
+	return json.Marshal(aux)
 }
 
 // AssistantMessage returns the first assistant message in the response choices, or nil if there are no assistant messages.
@@ -376,12 +389,12 @@ func (c *clientImpl) ChatCompletionStream(ctx context.Context, req *ChatCompleti
 				return
 			}
 
-			if !bytes.HasPrefix(line, []byte("data: ")) {
+			if !bytes.HasPrefix(line, []byte("expected: ")) {
 				continue
 			}
 
 			jsonPart := strings.TrimSpace(
-				strings.TrimPrefix(string(line), "data: "))
+				strings.TrimPrefix(string(line), "expected: "))
 
 			if jsonPart == "[DONE]" {
 				return

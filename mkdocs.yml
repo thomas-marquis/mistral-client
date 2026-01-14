@@ -67,6 +67,7 @@ nav:
       - Complex input data: advanced-usage/complex-input.md
       - "Testing: mock the client": advanced-usage/mock.md
       - Rate limiting: advanced-usage/rate-limiting.md
+      - Chat completion streaming: advanced-usage/completion-streaming.md
   - Concepts:
       - Content types: concepts/content-types.md
   - References:

@@ -13,7 +13,7 @@ const (
 	listModelJsonResp = `
 {
 	"object": "list",
-	"data": [
+	"expected": [
 		{
 			"id": "mistral-medium-latest",
 			"object": "model",

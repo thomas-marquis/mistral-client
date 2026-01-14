@@ -358,7 +358,7 @@ func TestClient_ChatCompletion(t *testing.T) {
 	})
 }
 
-func TestChatCompletionResponse(t *testing.T) {
+func TestChatCompletionResponse_UnmarshalJSON(t *testing.T) {
 	t.Run("should unmarshall with correct created_at time format", func(t *testing.T) {
 		j := `{
 			"id": "12345",
@@ -390,17 +390,68 @@ func TestChatCompletionResponse(t *testing.T) {
 	})
 }
 
+func TestChatCompletionResponse_MarshalJSON(t *testing.T) {
+	t.Run("should marshal it with correct created_at time format", func(t *testing.T) {
+		// Given
+		in := &mistral.ChatCompletionResponse{
+			Id:      "12345",
+			Created: time.Date(2025, time.November, 27, 21, 18, 59, 0, time.UTC),
+			Model:   "mistral-small-latest",
+			Usage: mistral.UsageInfo{
+				PromptTokens:     13,
+				TotalTokens:      23,
+				CompletionTokens: 10,
+			},
+			Object: "chat.completion",
+			Choices: []mistral.ChatCompletionChoice{
+				{
+					FinishReason: mistral.FinishReasonStop,
+					Message:      mistral.NewAssistantMessageFromString("Hello! How can I assist you today?"),
+				},
+			},
+		}
+		expected := `{
+			"id": "12345",
+			"created": 1764278339,
+			"model": "mistral-small-latest",
+			"usage": {
+				"prompt_tokens": 13,
+				"total_tokens": 23,
+				"completion_tokens": 10
+			},
+			"object": "chat.completion",
+			"choices": [
+				{
+					"index": 0,
+					"finish_reason": "stop",
+					"message": {
+						"role": "assistant",
+						"content": "Hello! How can I assist you today?"
+					}
+				}
+			]
+		}`
+
+		// When
+		actual, err := json.Marshal(in)
+
+		// Then
+		assert.NoError(t, err)
+		assert.JSONEq(t, expected, string(actual))
+	})
+}
+
 func TestClientImpl_ChatCompletionStream(t *testing.T) {
 	t.Run("Should call Mistral /chat/completion endpoint", func(t *testing.T) {
 		// Given
 		var gotReq string
 		mockServer := makeMockSseServerWithCapture(t, "POST", "/v1/chat/completions",
 			[]string{
-				`data: {"id":"aa","object":"chat.completion.chunk","created":1768084548,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}`,
-				`data: {"id":"aa","object":"chat.completion.chunk","created":1768084548,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":"Hello "},"finish_reason":null}]}`,
-				`data: {"id":"aa","object":"chat.completion.chunk","created":1768084548,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":"world! "},"finish_reason":null}]}`,
-				`data: {"id":"aa","object":"chat.completion.chunk","created":1768084548,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":""},"finish_reason":"stop"}],"usage":{"prompt_tokens":3,"total_tokens":5,"completion_tokens":2}}`,
-				`data: [DONE]`,
+				`expected: {"id":"aa","object":"chat.completion.chunk","created":1768084548,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}`,
+				`expected: {"id":"aa","object":"chat.completion.chunk","created":1768084548,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":"Hello "},"finish_reason":null}]}`,
+				`expected: {"id":"aa","object":"chat.completion.chunk","created":1768084548,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":"world! "},"finish_reason":null}]}`,
+				`expected: {"id":"aa","object":"chat.completion.chunk","created":1768084548,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":""},"finish_reason":"stop"}],"usage":{"prompt_tokens":3,"total_tokens":5,"completion_tokens":2}}`,
+				`expected: [DONE]`,
 			},
 			http.StatusOK, &gotReq)
 		defer mockServer.Close()
