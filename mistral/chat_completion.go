@@ -93,6 +93,8 @@ type ChatCompletionRequest struct {
 	Tools []Tool `json:"tools,omitempty"`
 }
 
+var _ json.Unmarshaler = (*ChatCompletionRequest)(nil)
+
 type ChatCompletionRequestOption func(request *ChatCompletionRequest)
 
 func NewChatCompletionRequest(model string, messages []ChatMessage, opts ...ChatCompletionRequestOption) *ChatCompletionRequest {
@@ -114,6 +116,28 @@ func NewChatCompletionStreamRequest(model string, messages []ChatMessage, opts .
 	r := NewChatCompletionRequest(model, messages, opts...)
 	r.Stream = true
 	return r
+}
+
+func (r *ChatCompletionRequest) UnmarshalJSON(data []byte) error {
+	type Alias ChatCompletionRequest
+	aux := &struct {
+		*Alias
+		Messages []map[string]any `json:"messages"`
+	}{
+		Alias: (*Alias)(r),
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	r.Messages = make([]ChatMessage, 0, len(aux.Messages))
+	for _, msg := range aux.Messages {
+		m, err := mapToMessage(msg)
+		if err != nil {
+			return err
+		}
+		r.Messages = append(r.Messages, m)
+	}
+	return nil
 }
 
 type ChatCompletionResponse struct {
@@ -176,8 +200,8 @@ func (r *ChatCompletionResponse) AssistantMessage() *AssistantMessage {
 }
 
 type ChatCompletionChoice struct {
-	FinishReason FinishReason      `json:"finish_reason"`
-	Index        int               `json:"index"`
+	FinishReason FinishReason      `json:"finish_reason,omitempty"`
+	Index        int               `json:"index,omitempty"`
 	Message      *AssistantMessage `json:"message"`
 }
 

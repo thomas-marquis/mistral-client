@@ -26,9 +26,9 @@ type cacheConfig struct {
 }
 
 type CachedData struct {
-	CreatedAt time.Time
-	Request   *ChatCompletionRequest
-	Response  *ChatCompletionResponse
+	CreatedAt              time.Time
+	ChatCompletionRequest  *ChatCompletionRequest
+	ChatCompletionResponse *ChatCompletionResponse
 }
 
 type cachedClientDecorator struct {
@@ -64,12 +64,12 @@ func (c *cachedClientDecorator) ChatCompletion(ctx context.Context, request *Cha
 		return nil, err
 	}
 
-	var resp ChatCompletionResponse
-	if err := json.Unmarshal(data, &resp); err != nil {
+	var cachedData CachedData
+	if err := json.Unmarshal(data, &cachedData); err != nil {
 		return nil, errors.Join(ErrCacheFailure, err)
 	}
 
-	return &resp, nil
+	return cachedData.ChatCompletionResponse, nil
 }
 
 func (c *cachedClientDecorator) ChatCompletionStream(ctx context.Context, request *ChatCompletionRequest) (<-chan *CompletionChunk, error) {

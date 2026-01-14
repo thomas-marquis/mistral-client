@@ -279,3 +279,30 @@ func unmarshalMessageContent(raw map[string]any) (Content, error) {
 	}
 	return ct, nil
 }
+
+func mapToMessage(data map[string]any) (ChatMessage, error) {
+	role, ok := data["role"].(string)
+	if !ok {
+		return nil, errors.New("role not found")
+	}
+	switch role {
+	case RoleSystem.String():
+		var m SystemMessage
+		err := mapToStruct(data, &m)
+		return &m, err
+	case RoleUser.String():
+		var m UserMessage
+		err := mapToStruct(data, &m)
+		return &m, err
+	case RoleAssistant.String():
+		var m AssistantMessage
+		err := mapToStruct(data, &m)
+		return &m, err
+	case RoleTool.String():
+		var m ToolMessage
+		err := mapToStruct(data, &m)
+		return &m, err
+	default:
+		return nil, errors.New("unsupported role")
+	}
+}

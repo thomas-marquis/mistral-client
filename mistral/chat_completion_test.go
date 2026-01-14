@@ -441,6 +441,54 @@ func TestChatCompletionResponse_MarshalJSON(t *testing.T) {
 	})
 }
 
+func TestNewChatCompletionRequest_UnmarshalJSON(t *testing.T) {
+	t.Run("should unmarshal message list correctly", func(t *testing.T) {
+		// Given
+		j := `{
+		  "model": "mistral-small-latest",
+		  "messages": [
+			{
+			  "role": "system",
+			  "content": "You are a helpful assistant."
+			},
+			{
+			  "role": "user",
+			  "content": "Say hello"
+			},
+			{
+              "role": "assistant",
+			  "content": "Hello!"
+			}
+		  ],
+		  "parallel_tool_calls": true
+		}`
+
+		expected := mistral.ChatCompletionRequest{
+			CompletionConfig: mistral.CompletionConfig{
+				ParallelToolCalls: true,
+			},
+			Model: "mistral-small-latest",
+			Messages: []mistral.ChatMessage{
+				mistral.NewSystemMessageFromString("You are a helpful assistant."),
+				mistral.NewUserMessageFromString("Say hello"),
+				mistral.NewAssistantMessageFromString("Hello!"),
+			},
+		}
+
+		// When
+		var res mistral.ChatCompletionRequest
+		err := json.Unmarshal([]byte(j), &res)
+
+		// Then
+		assert.NoError(t, err)
+		assert.Equal(t, expected, res)
+		assert.Equal(t, 3, len(res.Messages))
+		for i := range 3 {
+			assert.Equal(t, expected.Messages[i], res.Messages[i])
+		}
+	})
+}
+
 func TestClientImpl_ChatCompletionStream(t *testing.T) {
 	t.Run("Should call Mistral /chat/completion endpoint", func(t *testing.T) {
 		// Given
