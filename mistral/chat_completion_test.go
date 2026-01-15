@@ -397,7 +397,7 @@ func TestChatCompletionResponse_MarshalJSON(t *testing.T) {
 			Id:      "12345",
 			Created: time.Date(2025, time.November, 27, 21, 18, 59, 0, time.UTC),
 			Model:   "mistral-small-latest",
-			Usage: mistral.UsageInfo{
+			Usage: &mistral.UsageInfo{
 				PromptTokens:     13,
 				TotalTokens:      23,
 				CompletionTokens: 10,
@@ -422,7 +422,6 @@ func TestChatCompletionResponse_MarshalJSON(t *testing.T) {
 			"object": "chat.completion",
 			"choices": [
 				{
-					"index": 0,
 					"finish_reason": "stop",
 					"message": {
 						"role": "assistant",
@@ -495,11 +494,11 @@ func TestClientImpl_ChatCompletionStream(t *testing.T) {
 		var gotReq string
 		mockServer := makeMockSseServerWithCapture(t, "POST", "/v1/chat/completions",
 			[]string{
-				`expected: {"id":"aa","object":"chat.completion.chunk","created":1768084548,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}`,
-				`expected: {"id":"aa","object":"chat.completion.chunk","created":1768084548,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":"Hello "},"finish_reason":null}]}`,
-				`expected: {"id":"aa","object":"chat.completion.chunk","created":1768084548,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":"world! "},"finish_reason":null}]}`,
-				`expected: {"id":"aa","object":"chat.completion.chunk","created":1768084548,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":""},"finish_reason":"stop"}],"usage":{"prompt_tokens":3,"total_tokens":5,"completion_tokens":2}}`,
-				`expected: [DONE]`,
+				`data: {"id":"aa","object":"chat.completion.chunk","created":1768084548,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}`,
+				`data: {"id":"aa","object":"chat.completion.chunk","created":1768084548,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":"Hello "},"finish_reason":null}]}`,
+				`data: {"id":"aa","object":"chat.completion.chunk","created":1768084548,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":"world! "},"finish_reason":null}]}`,
+				`data: {"id":"aa","object":"chat.completion.chunk","created":1768084548,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":""},"finish_reason":"stop"}],"usage":{"prompt_tokens":3,"total_tokens":5,"completion_tokens":2}}`,
+				`data: [DONE]`,
 			},
 			http.StatusOK, &gotReq)
 		defer mockServer.Close()
@@ -559,5 +558,92 @@ func TestClientImpl_ChatCompletionStream(t *testing.T) {
           "stream": true
 		}`
 		assert.JSONEq(t, expectedReq, gotReq)
+	})
+}
+
+func TestCompletionChunk_UnmarshalJSON(t *testing.T) {
+	t.Run("should unmarshal with correct created_at time format", func(t *testing.T) {
+		// Given
+		j := `{
+			"id": "aa",
+			"object": "chat.completion.chunk",
+			"created": 1768084548,
+			"model": "mistral-small-latest",
+			"choices": [
+				{
+					"index": 0,
+					"delta": {
+						"role": "assistant",
+						"content": "hello"
+					},
+					"finish_reason": "stop"
+				}
+			]
+		}`
+
+		expected := mistral.CompletionChunk{
+			Id:      "aa",
+			Object:  "chat.completion.chunk",
+			Created: time.Date(2026, time.January, 10, 22, 35, 48, 0, time.UTC),
+			Model:   "mistral-small-latest",
+			Choices: []mistral.CompletionResponseStreamChoice{
+				{
+					Index:        0,
+					Delta:        mistral.NewAssistantMessageFromString("hello"),
+					FinishReason: mistral.FinishReasonStop,
+				},
+			},
+		}
+
+		// When
+		var res mistral.CompletionChunk
+		err := json.Unmarshal([]byte(j), &res)
+
+		// Then
+		assert.NoError(t, err)
+		assert.Equal(t, expected, res)
+	})
+}
+
+func TestCompletionChunk_MarshallJSON(t *testing.T) {
+	t.Run("should marshal it with correct created_at time format", func(t *testing.T) {
+		// Given
+		in := &mistral.CompletionChunk{
+			Id:      "aa",
+			Object:  "chat.completion.chunk",
+			Created: time.Date(2026, time.January, 10, 22, 35, 48, 0, time.UTC),
+			Model:   "mistral-small-latest",
+			Choices: []mistral.CompletionResponseStreamChoice{
+				{
+					Index:        0,
+					Delta:        mistral.NewAssistantMessageFromString("hello"),
+					FinishReason: mistral.FinishReasonStop,
+				},
+			},
+		}
+
+		expected := `{
+			"id": "aa",
+			"object": "chat.completion.chunk",
+			"created": 1768084548,
+			"model": "mistral-small-latest",
+			"choices": [
+				{
+					"index": 0,
+					"delta": {
+						"role": "assistant",
+						"content": "hello"
+					},
+					"finish_reason": "stop"
+				}
+			]
+		}`
+
+		// When
+		res, err := json.Marshal(in)
+
+		// Then
+		assert.NoError(t, err)
+		assert.JSONEq(t, expected, string(res))
 	})
 }

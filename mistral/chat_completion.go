@@ -76,7 +76,7 @@ type CompletionConfig struct {
 
 	// Stream defines whether to stream back partial progress.
 	//
-	// If set, tokens will be sent as expected-only server-side events as they become available, with the stream terminated by a expected: [DONE] message.
+	// If set, tokens will be sent as expected-only server-side events as they become available, with the stream terminated by a data: [DONE] message.
 	// Otherwise, the server will hold the request open until the timeout or until completion, with the response containing the full result as JSON.
 	Stream bool `json:"stream,omitempty"`
 }
@@ -146,7 +146,7 @@ type ChatCompletionResponse struct {
 	Id      string                 `json:"id"`
 	Model   string                 `json:"model"`
 	Object  string                 `json:"object"`
-	Usage   UsageInfo              `json:"usage"`
+	Usage   *UsageInfo             `json:"usage,omitempty"`
 
 	Latency time.Duration `json:"-"`
 }
@@ -336,7 +336,7 @@ type CompletionChunk struct {
 	Id      string                           `json:"id"`
 	Model   string                           `json:"model"`
 	Object  string                           `json:"object"`
-	Usage   UsageInfo                        `json:"usage"`
+	Usage   *UsageInfo                       `json:"usage,omitempty"`
 
 	IsLastChunk  bool          `json:"-"`
 	ChunkLatency time.Duration `json:"-"`
@@ -345,6 +345,7 @@ type CompletionChunk struct {
 }
 
 var _ json.Unmarshaler = (*CompletionChunk)(nil)
+var _ json.Marshaler = (*CompletionChunk)(nil)
 
 func (c *CompletionChunk) UnmarshalJSON(data []byte) error {
 	type Alias CompletionChunk
@@ -359,6 +360,18 @@ func (c *CompletionChunk) UnmarshalJSON(data []byte) error {
 	}
 	c.Created = time.Unix(aux.Created, 0).UTC()
 	return nil
+}
+
+func (c *CompletionChunk) MarshalJSON() ([]byte, error) {
+	type Alias CompletionChunk
+	aux := &struct {
+		*Alias
+		Created int64 `json:"created"`
+	}{
+		Alias:   (*Alias)(c),
+		Created: c.Created.Unix(),
+	}
+	return json.Marshal(aux)
 }
 
 func (c *CompletionChunk) DeltaMessage() AssistantMessage {
@@ -413,12 +426,12 @@ func (c *clientImpl) ChatCompletionStream(ctx context.Context, req *ChatCompleti
 				return
 			}
 
-			if !bytes.HasPrefix(line, []byte("expected: ")) {
+			if !bytes.HasPrefix(line, []byte("data: ")) {
 				continue
 			}
 
 			jsonPart := strings.TrimSpace(
-				strings.TrimPrefix(string(line), "expected: "))
+				strings.TrimPrefix(string(line), "data: "))
 
 			if jsonPart == "[DONE]" {
 				return

@@ -190,7 +190,8 @@ func TestClientImpl_SearchModelsByCapabilities(t *testing.T) {
 		defer mockServer.Close()
 
 		ctx := context.TODO()
-		c := mistral.New("fakeApiKey", mistral.WithBaseApiUrl(mockServer.URL))
+		c := mistral.New("fakeApiKey",
+			mistral.WithBaseApiUrl(mockServer.URL), mistral.WithVerbose(true))
 
 		// When
 		res, err := c.SearchModels(ctx, &mistral.ModelCapabilities{
@@ -224,6 +225,22 @@ func TestClientImpl_SearchModelsByCapabilities(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, 1, len(res))
 		assert.Equal(t, "mistral-moderation-latest", res[0].Id)
+	})
+}
+
+func TestClientImpl_GetModel(t *testing.T) {
+	t.Run("should return model card if exists", func(t *testing.T) {
+		// Given
+		mockServer := makeMockServerWithCapture(t, "GET", "/v1/models/mistral-embed-2507", `{
+			"object": "model",
+			"created": 1766520693,
+			"owned_by": "mistralai",
+			"capabilities": {
+				"completion_chat": true,
+				"function_calling": true,
+				"completion_fim": false,
+			}`, http.StatusOK, nil,
+		})
 	})
 }
 

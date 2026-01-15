@@ -81,7 +81,7 @@ func makeMockSseServerWithCapture(t *testing.T, method, path string, messages []
 			http.Error(w, "no messages provided", http.StatusInternalServerError)
 			return
 		}
-		if strings.TrimSpace(messages[len(messages)-1]) != "expected: [DONE]" {
+		if strings.TrimSpace(messages[len(messages)-1]) != "data: [DONE]" {
 			http.Error(w, "no special done message found", http.StatusInternalServerError)
 			return
 		}
@@ -124,7 +124,7 @@ func makeMockSseServerWithCapture(t *testing.T, method, path string, messages []
 						if f, ok := w.(http.Flusher); ok {
 							f.Flush()
 						}
-						if strings.TrimSpace(msg) == "expected: [DONE]" {
+						if strings.TrimSpace(msg) == "data: [DONE]" {
 							wg.Done()
 							close(messageChan)
 							return

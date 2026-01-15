@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"reflect"
 	"time"
 
 	"github.com/thomas-marquis/mistral-client/mistral/internal/cache"
@@ -26,9 +27,13 @@ type cacheConfig struct {
 }
 
 type CachedData struct {
+	Key                    string
 	CreatedAt              time.Time
 	ChatCompletionRequest  *ChatCompletionRequest
 	ChatCompletionResponse *ChatCompletionResponse
+	EmbeddingRequest       *EmbeddingRequest
+	EmbeddingResponse      *EmbeddingResponse
+	CompletionChunks       []*CompletionChunk
 }
 
 type cachedClientDecorator struct {
@@ -53,15 +58,21 @@ func (c *cachedClientDecorator) ChatCompletion(ctx context.Context, request *Cha
 			if err != nil {
 				return nil, err
 			}
-			cacheData, err := json.Marshal(res)
+			cacheData, err := json.Marshal(CachedData{
+				Key:                    cacheKey,
+				CreatedAt:              time.Now(),
+				ChatCompletionRequest:  request,
+				ChatCompletionResponse: res,
+			})
 			if err != nil {
 				return nil, errors.Join(ErrCacheFailure, err)
 			}
 			if err := c.engine.Set(ctx, cacheKey, cacheData); err != nil {
-				return nil, err
+				return nil, errors.Join(ErrCacheFailure, err)
 			}
+			return res, nil
 		}
-		return nil, err
+		return nil, errors.Join(ErrCacheFailure, err)
 	}
 
 	var cachedData CachedData
@@ -73,7 +84,71 @@ func (c *cachedClientDecorator) ChatCompletion(ctx context.Context, request *Cha
 }
 
 func (c *cachedClientDecorator) ChatCompletionStream(ctx context.Context, request *ChatCompletionRequest) (<-chan *CompletionChunk, error) {
-	return nil, errors.New("not implemented yet")
+	cacheKey, err := computeHashKey(request)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := c.engine.Get(ctx, cacheKey)
+	if err != nil {
+		if errors.Is(err, ErrCacheMiss) {
+			res, err := c.client.ChatCompletionStream(ctx, request)
+			if err != nil {
+				return nil, err
+			}
+
+			proxyChan := make(chan *CompletionChunk)
+
+			go func() {
+				defer close(proxyChan)
+				cachedData := CachedData{
+					Key:                   cacheKey,
+					CreatedAt:             time.Now(),
+					ChatCompletionRequest: request,
+					CompletionChunks:      make([]*CompletionChunk, 0),
+				}
+				for chunk := range res {
+					cachedData.CompletionChunks = append(cachedData.CompletionChunks, chunk)
+					proxyChan <- chunk
+				}
+				cacheData, err := json.Marshal(cachedData)
+				if err != nil {
+					proxyChan <- &CompletionChunk{
+						Error: errors.Join(ErrCacheFailure, err),
+						Choices: []CompletionResponseStreamChoice{
+							{Delta: NewAssistantMessageFromString("")},
+						},
+					}
+				}
+				if err := c.engine.Set(ctx, cacheKey, cacheData); err != nil {
+					proxyChan <- &CompletionChunk{
+						Error: errors.Join(ErrCacheFailure, err),
+						Choices: []CompletionResponseStreamChoice{
+							{Delta: NewAssistantMessageFromString("")},
+						},
+					}
+				}
+			}()
+			return proxyChan, nil
+		}
+		return nil, errors.Join(ErrCacheFailure, err)
+	}
+
+	var cachedData CachedData
+	if err := json.Unmarshal(data, &cachedData); err != nil {
+		return nil, errors.Join(ErrCacheFailure, err)
+	}
+
+	resChan := make(chan *CompletionChunk)
+
+	go func() {
+		defer close(resChan)
+		for _, chunk := range cachedData.CompletionChunks {
+			resChan <- chunk
+		}
+	}()
+
+	return resChan, nil
 }
 
 func (c *cachedClientDecorator) Embeddings(ctx context.Context, request *EmbeddingRequest) (*EmbeddingResponse, error) {
@@ -89,23 +164,29 @@ func (c *cachedClientDecorator) Embeddings(ctx context.Context, request *Embeddi
 			if err != nil {
 				return nil, err
 			}
-			cacheData, err := json.Marshal(res)
+			cacheData, err := json.Marshal(CachedData{
+				Key:               cacheKey,
+				CreatedAt:         time.Now(),
+				EmbeddingRequest:  request,
+				EmbeddingResponse: res,
+			})
 			if err != nil {
 				return nil, errors.Join(ErrCacheFailure, err)
 			}
 			if err := c.engine.Set(ctx, cacheKey, cacheData); err != nil {
-				return nil, err
+				return nil, errors.Join(ErrCacheFailure, err)
 			}
+			return res, nil
 		}
-		return nil, err
-	}
-
-	var resp EmbeddingResponse
-	if err := json.Unmarshal(data, &resp); err != nil {
 		return nil, errors.Join(ErrCacheFailure, err)
 	}
 
-	return &resp, nil
+	var cachedData CachedData
+	if err := json.Unmarshal(data, &cachedData); err != nil {
+		return nil, errors.Join(ErrCacheFailure, err)
+	}
+
+	return cachedData.EmbeddingResponse, nil
 }
 
 func (c *cachedClientDecorator) ListModels(ctx context.Context) ([]*BaseModelCard, error) {
@@ -121,8 +202,8 @@ func (c *cachedClientDecorator) GetModel(ctx context.Context, modelId string) (*
 }
 
 func computeHashKey(in any) (string, error) {
-	if in == nil {
-		return "", errors.New("request cannot be nil")
+	if in == nil || (reflect.ValueOf(in).Kind() == reflect.Ptr && reflect.ValueOf(in).IsNil()) {
+		return "", errors.Join(ErrCacheFailure, errors.New("request cannot be nil"))
 	}
 
 	data, err := json.Marshal(in)
