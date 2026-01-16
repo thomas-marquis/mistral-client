@@ -194,7 +194,6 @@ func WithClientTransport(t http.RoundTripper) Option {
 func WithLocalCache() Option {
 	return func(c *clientImpl) {
 		c.cacheConfig.enabled = true
-		c.cacheConfig.cacheDir = DefaultCacheDir
 	}
 }
 
