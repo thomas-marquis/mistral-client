@@ -85,7 +85,7 @@ func TestCachedDataEq(t *testing.T) {
 		ctx := context.TODO()
 
 		// When
-		mockEngine.Set(ctx, "12345", jsonData)
+		mockEngine.Set(ctx, "12345", jsonData) //nolint:errcheck
 	})
 }
 
@@ -635,11 +635,10 @@ func TestCachedClientDecorator_ChatCompletionStream(t *testing.T) {
 		}()
 
 		assert.Eventually(t, func() bool {
-			select {
-			case <-done:
-				return assert.Equal(t, len(chunks), len(receivedChunks)) &&
-					assert.Equal(t, chunks, receivedChunks)
-			}
+			<-done
+			return assert.Equal(t, len(chunks), len(receivedChunks)) &&
+				assert.Equal(t, chunks, receivedChunks)
+
 		}, 2*time.Second, 100*time.Millisecond)
 	})
 
@@ -728,11 +727,9 @@ func TestCachedClientDecorator_ChatCompletionStream(t *testing.T) {
 		}()
 
 		assert.Eventually(t, func() bool {
-			select {
-			case <-done:
-				return assert.Equal(t, len(chunks), len(receivedChunks)) &&
-					assert.Equal(t, chunks, receivedChunks)
-			}
+			<-done
+			return assert.Equal(t, len(chunks), len(receivedChunks)) &&
+				assert.Equal(t, chunks, receivedChunks)
 		}, 2*time.Second, 100*time.Millisecond)
 	})
 
@@ -821,14 +818,12 @@ func TestCachedClientDecorator_ChatCompletionStream(t *testing.T) {
 		}()
 
 		assert.Eventually(t, func() bool {
-			select {
-			case <-done:
-				return assert.Error(t, lastChunk.Error) &&
-					assert.ErrorIs(t, lastChunk.Error, engSetErr) &&
-					assert.ErrorIs(t, lastChunk.Error, mistral.ErrCacheFailure) &&
-					assert.Len(t, lastChunk.Choices, 1) &&
-					assert.Empty(t, lastChunk.Choices[0].Delta.Content().String())
-			}
+			<-done
+			return assert.Error(t, lastChunk.Error) &&
+				assert.ErrorIs(t, lastChunk.Error, engSetErr) &&
+				assert.ErrorIs(t, lastChunk.Error, mistral.ErrCacheFailure) &&
+				assert.Len(t, lastChunk.Choices, 1) &&
+				assert.Empty(t, lastChunk.Choices[0].Delta.Content().String())
 		}, 2*time.Second, 100*time.Millisecond)
 	})
 
