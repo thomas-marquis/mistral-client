@@ -11,8 +11,8 @@ Here are some examples of API responses in both formats:
 
     ```json
     {
-        "role": "assistant",
-        "content": "Hello, I'm a useful assistant."
+        "role": "user",
+        "content": "Hello, you're a useful assistant."
     }
     ```
 

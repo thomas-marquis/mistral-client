@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/thomas-marquis/mistral-client/mistral/internal/cache"
 	"golang.org/x/time/rate"
 )
 
@@ -54,6 +55,8 @@ type clientImpl struct {
 	retryWaitMin     time.Duration
 	retryWaitMax     time.Duration
 	retryStatusCodes map[int]struct{}
+
+	cacheConfig cacheConfig
 }
 
 type Option func(impl *clientImpl)
@@ -78,6 +81,8 @@ func New(apiKey string, opts ...Option) Client {
 		retryWaitMin:     200 * time.Millisecond,
 		retryWaitMax:     1 * time.Second,
 		retryStatusCodes: make(map[int]struct{}),
+
+		cacheConfig: cacheConfig{cacheDir: DefaultCacheDir, enabled: false},
 	}
 
 	for _, code := range []int{
@@ -94,7 +99,25 @@ func New(apiKey string, opts ...Option) Client {
 		opt(c)
 	}
 
+	if c.cacheConfig.enabled {
+		engine, err := cache.NewLocalFsEngine(c.cacheConfig.cacheDir) // TODO: implement other kind of engines later (s3, db...)
+		if err != nil {
+			logger.Fatalf("Failed to initialize local cache engine: %v", err)
+		}
+
+		return NewCached(c, engine)
+	}
+
 	return c
+}
+
+// NewCached decorates a client instance to cache responses with the given cache engine.
+func NewCached(client Client, cacheEngine CacheEngine) Client {
+	cc, err := newCachedClient(client, cacheEngine)
+	if err != nil {
+		logger.Fatalf("Failed to initialize local cache: %v", err)
+	}
+	return cc
 }
 
 func WithClientTimeout(timeout time.Duration) Option {
@@ -163,6 +186,22 @@ func WithRetryStatusCodes(codes ...int) Option {
 func WithClientTransport(t http.RoundTripper) Option {
 	return func(c *clientImpl) {
 		c.httpClient.Transport = t
+	}
+}
+
+// WithLocalCache enables caching of responses in the local file system.
+// NewCached response will be stored in the DefaultCacheDir
+func WithLocalCache() Option {
+	return func(c *clientImpl) {
+		c.cacheConfig.enabled = true
+	}
+}
+
+// WithCacheDir enables local caching and sets the directory where cached responses will be stored.
+func WithCacheDir(dir string) Option {
+	return func(c *clientImpl) {
+		c.cacheConfig.enabled = true
+		c.cacheConfig.cacheDir = dir
 	}
 }
 

@@ -93,6 +93,8 @@ type ChatCompletionRequest struct {
 	Tools []Tool `json:"tools,omitempty"`
 }
 
+var _ json.Unmarshaler = (*ChatCompletionRequest)(nil)
+
 type ChatCompletionRequestOption func(request *ChatCompletionRequest)
 
 func NewChatCompletionRequest(model string, messages []ChatMessage, opts ...ChatCompletionRequestOption) *ChatCompletionRequest {
@@ -116,18 +118,41 @@ func NewChatCompletionStreamRequest(model string, messages []ChatMessage, opts .
 	return r
 }
 
+func (r *ChatCompletionRequest) UnmarshalJSON(data []byte) error {
+	type Alias ChatCompletionRequest
+	aux := &struct {
+		*Alias
+		Messages []map[string]any `json:"messages"`
+	}{
+		Alias: (*Alias)(r),
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	r.Messages = make([]ChatMessage, 0, len(aux.Messages))
+	for _, msg := range aux.Messages {
+		m, err := mapToMessage(msg)
+		if err != nil {
+			return err
+		}
+		r.Messages = append(r.Messages, m)
+	}
+	return nil
+}
+
 type ChatCompletionResponse struct {
 	Choices []ChatCompletionChoice `json:"choices"`
 	Created time.Time              `json:"created"`
 	Id      string                 `json:"id"`
 	Model   string                 `json:"model"`
 	Object  string                 `json:"object"`
-	Usage   UsageInfo              `json:"usage"`
+	Usage   *UsageInfo             `json:"usage,omitempty"`
 
-	Latency time.Duration
+	Latency time.Duration `json:"-"`
 }
 
 var _ json.Unmarshaler = (*ChatCompletionResponse)(nil)
+var _ json.Marshaler = (*ChatCompletionResponse)(nil)
 
 func (r *ChatCompletionResponse) UnmarshalJSON(data []byte) error {
 	type Alias ChatCompletionResponse
@@ -142,6 +167,18 @@ func (r *ChatCompletionResponse) UnmarshalJSON(data []byte) error {
 	}
 	r.Created = time.Unix(aux.Created, 0).UTC()
 	return nil
+}
+
+func (r *ChatCompletionResponse) MarshalJSON() ([]byte, error) {
+	type Alias ChatCompletionResponse
+	aux := &struct {
+		*Alias
+		Created int64 `json:"created"`
+	}{
+		Alias:   (*Alias)(r),
+		Created: r.Created.Unix(),
+	}
+	return json.Marshal(aux)
 }
 
 // AssistantMessage returns the first assistant message in the response choices, or nil if there are no assistant messages.
@@ -163,8 +200,8 @@ func (r *ChatCompletionResponse) AssistantMessage() *AssistantMessage {
 }
 
 type ChatCompletionChoice struct {
-	FinishReason FinishReason      `json:"finish_reason"`
-	Index        int               `json:"index"`
+	FinishReason FinishReason      `json:"finish_reason,omitempty"`
+	Index        int               `json:"index,omitempty"`
 	Message      *AssistantMessage `json:"message"`
 }
 
@@ -299,7 +336,7 @@ type CompletionChunk struct {
 	Id      string                           `json:"id"`
 	Model   string                           `json:"model"`
 	Object  string                           `json:"object"`
-	Usage   UsageInfo                        `json:"usage"`
+	Usage   *UsageInfo                       `json:"usage,omitempty"`
 
 	IsLastChunk  bool          `json:"-"`
 	ChunkLatency time.Duration `json:"-"`
@@ -308,6 +345,7 @@ type CompletionChunk struct {
 }
 
 var _ json.Unmarshaler = (*CompletionChunk)(nil)
+var _ json.Marshaler = (*CompletionChunk)(nil)
 
 func (c *CompletionChunk) UnmarshalJSON(data []byte) error {
 	type Alias CompletionChunk
@@ -322,6 +360,18 @@ func (c *CompletionChunk) UnmarshalJSON(data []byte) error {
 	}
 	c.Created = time.Unix(aux.Created, 0).UTC()
 	return nil
+}
+
+func (c *CompletionChunk) MarshalJSON() ([]byte, error) {
+	type Alias CompletionChunk
+	aux := &struct {
+		*Alias
+		Created int64 `json:"created"`
+	}{
+		Alias:   (*Alias)(c),
+		Created: c.Created.Unix(),
+	}
+	return json.Marshal(aux)
 }
 
 func (c *CompletionChunk) DeltaMessage() AssistantMessage {

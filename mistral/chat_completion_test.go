@@ -358,7 +358,7 @@ func TestClient_ChatCompletion(t *testing.T) {
 	})
 }
 
-func TestChatCompletionResponse(t *testing.T) {
+func TestChatCompletionResponse_UnmarshalJSON(t *testing.T) {
 	t.Run("should unmarshall with correct created_at time format", func(t *testing.T) {
 		j := `{
 			"id": "12345",
@@ -387,6 +387,104 @@ func TestChatCompletionResponse(t *testing.T) {
 
 		assert.NoError(t, json.Unmarshal([]byte(j), &tc))
 		assert.Equal(t, time.Date(2025, time.November, 27, 21, 18, 59, 0, time.UTC), tc.Created)
+	})
+}
+
+func TestChatCompletionResponse_MarshalJSON(t *testing.T) {
+	t.Run("should marshal it with correct created_at time format", func(t *testing.T) {
+		// Given
+		in := &mistral.ChatCompletionResponse{
+			Id:      "12345",
+			Created: time.Date(2025, time.November, 27, 21, 18, 59, 0, time.UTC),
+			Model:   "mistral-small-latest",
+			Usage: &mistral.UsageInfo{
+				PromptTokens:     13,
+				TotalTokens:      23,
+				CompletionTokens: 10,
+			},
+			Object: "chat.completion",
+			Choices: []mistral.ChatCompletionChoice{
+				{
+					FinishReason: mistral.FinishReasonStop,
+					Message:      mistral.NewAssistantMessageFromString("Hello! How can I assist you today?"),
+				},
+			},
+		}
+		expected := `{
+			"id": "12345",
+			"created": 1764278339,
+			"model": "mistral-small-latest",
+			"usage": {
+				"prompt_tokens": 13,
+				"total_tokens": 23,
+				"completion_tokens": 10
+			},
+			"object": "chat.completion",
+			"choices": [
+				{
+					"finish_reason": "stop",
+					"message": {
+						"role": "assistant",
+						"content": "Hello! How can I assist you today?"
+					}
+				}
+			]
+		}`
+
+		// When
+		actual, err := json.Marshal(in)
+
+		// Then
+		assert.NoError(t, err)
+		assert.JSONEq(t, expected, string(actual))
+	})
+}
+
+func TestNewChatCompletionRequest_UnmarshalJSON(t *testing.T) {
+	t.Run("should unmarshal message list correctly", func(t *testing.T) {
+		// Given
+		j := `{
+		  "model": "mistral-small-latest",
+		  "messages": [
+			{
+			  "role": "system",
+			  "content": "You are a helpful assistant."
+			},
+			{
+			  "role": "user",
+			  "content": "Say hello"
+			},
+			{
+              "role": "assistant",
+			  "content": "Hello!"
+			}
+		  ],
+		  "parallel_tool_calls": true
+		}`
+
+		expected := mistral.ChatCompletionRequest{
+			CompletionConfig: mistral.CompletionConfig{
+				ParallelToolCalls: true,
+			},
+			Model: "mistral-small-latest",
+			Messages: []mistral.ChatMessage{
+				mistral.NewSystemMessageFromString("You are a helpful assistant."),
+				mistral.NewUserMessageFromString("Say hello"),
+				mistral.NewAssistantMessageFromString("Hello!"),
+			},
+		}
+
+		// When
+		var res mistral.ChatCompletionRequest
+		err := json.Unmarshal([]byte(j), &res)
+
+		// Then
+		assert.NoError(t, err)
+		assert.Equal(t, expected, res)
+		assert.Equal(t, 3, len(res.Messages))
+		for i := range 3 {
+			assert.Equal(t, expected.Messages[i], res.Messages[i])
+		}
 	})
 }
 
@@ -460,5 +558,92 @@ func TestClientImpl_ChatCompletionStream(t *testing.T) {
           "stream": true
 		}`
 		assert.JSONEq(t, expectedReq, gotReq)
+	})
+}
+
+func TestCompletionChunk_UnmarshalJSON(t *testing.T) {
+	t.Run("should unmarshal with correct created_at time format", func(t *testing.T) {
+		// Given
+		j := `{
+			"id": "aa",
+			"object": "chat.completion.chunk",
+			"created": 1768084548,
+			"model": "mistral-small-latest",
+			"choices": [
+				{
+					"index": 0,
+					"delta": {
+						"role": "assistant",
+						"content": "hello"
+					},
+					"finish_reason": "stop"
+				}
+			]
+		}`
+
+		expected := mistral.CompletionChunk{
+			Id:      "aa",
+			Object:  "chat.completion.chunk",
+			Created: time.Date(2026, time.January, 10, 22, 35, 48, 0, time.UTC),
+			Model:   "mistral-small-latest",
+			Choices: []mistral.CompletionResponseStreamChoice{
+				{
+					Index:        0,
+					Delta:        mistral.NewAssistantMessageFromString("hello"),
+					FinishReason: mistral.FinishReasonStop,
+				},
+			},
+		}
+
+		// When
+		var res mistral.CompletionChunk
+		err := json.Unmarshal([]byte(j), &res)
+
+		// Then
+		assert.NoError(t, err)
+		assert.Equal(t, expected, res)
+	})
+}
+
+func TestCompletionChunk_MarshallJSON(t *testing.T) {
+	t.Run("should marshal it with correct created_at time format", func(t *testing.T) {
+		// Given
+		in := &mistral.CompletionChunk{
+			Id:      "aa",
+			Object:  "chat.completion.chunk",
+			Created: time.Date(2026, time.January, 10, 22, 35, 48, 0, time.UTC),
+			Model:   "mistral-small-latest",
+			Choices: []mistral.CompletionResponseStreamChoice{
+				{
+					Index:        0,
+					Delta:        mistral.NewAssistantMessageFromString("hello"),
+					FinishReason: mistral.FinishReasonStop,
+				},
+			},
+		}
+
+		expected := `{
+			"id": "aa",
+			"object": "chat.completion.chunk",
+			"created": 1768084548,
+			"model": "mistral-small-latest",
+			"choices": [
+				{
+					"index": 0,
+					"delta": {
+						"role": "assistant",
+						"content": "hello"
+					},
+					"finish_reason": "stop"
+				}
+			]
+		}`
+
+		// When
+		res, err := json.Marshal(in)
+
+		// Then
+		assert.NoError(t, err)
+		assert.JSONEq(t, expected, string(res))
 	})
 }

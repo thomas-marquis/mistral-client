@@ -59,14 +59,17 @@ nav:
   - Basic usage:
       - Initialize the client: basic-usage/init-client.md
       - Perform a basic chat completion: basic-usage/chat-completion.md
+      - Streaming chat completion: basic-usage/chat-completion-streaming.md
       - Constraint the output format: basic-usage/structured.md
       - Call tools: basic-usage/tool-calling.md
       - List and Search models: basic-usage/models.md
       - Embed a text: basic-usage/embed.md
+      - Enable caching: basic-usage/caching.md
   - Advanced usage:
       - Complex input data: advanced-usage/complex-input.md
       - "Testing: mock the client": advanced-usage/mock.md
       - Rate limiting: advanced-usage/rate-limiting.md
+      - Custom Cache Engine: advanced-usage/custom-cache.md
   - Concepts:
       - Content types: concepts/content-types.md
   - References:

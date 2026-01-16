@@ -18,6 +18,8 @@ go get github.com/thomas-marquis/mistral-client
 
 ## Features
 
+**Basic features:**
+
 - **Chat Completion**: Synchronous and streaming support.
 - **Embeddings**: Generate text embeddings with various encoding formats and dimensions.
 - **Tool Calling**: Native support for function calling and tool usage.
@@ -25,6 +27,15 @@ go get github.com/thomas-marquis/mistral-client
 - **Structured Output**: Support for JSON Mode and JSON Schema.
 - **Advanced Client**: Built-in retry logic, rate limiting, and custom HTTP client configuration.
 - **Model Management**: List, search, and retrieve details for Mistral models.
+
+**What makes a difference:**
+
+- **Caching**: Cache responses to avoid unnecessary repeated API calls (e.g. for local development runs).
+
+**Coming soon:**
+
+- **MLflow integration**: Store your prompts on MLfow Prompt Registry and get them back for reuse.
+- **Fake models**: Use fake models for local development and testing.
 
 ## Getting Started
 

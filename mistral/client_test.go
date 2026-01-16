@@ -52,7 +52,7 @@ func makeMockServerWithCapture(t *testing.T, method, path, jsonResponse string, 
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == method && r.URL.Path == path {
 			// Capture and pretty-print the incoming JSON body for assertions
-			if r.Body != nil {
+			if capturedBody != nil && r.Body != nil {
 				defer r.Body.Close() //nolint:errcheck
 				raw, _ := io.ReadAll(r.Body)
 				var anyJSON any

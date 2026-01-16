@@ -182,7 +182,58 @@ const (
 `
 )
 
-func TestClientImpl_SearchModelsByCapabilities(t *testing.T) {
+func TestClientImpl_ListModels(t *testing.T) {
+	t.Run("should return models list", func(t *testing.T) {
+		// Given
+		mockServer := makeMockServerWithCapture(t, "GET", "/v1/models", listModelJsonResp, http.StatusOK, nil)
+		defer mockServer.Close()
+
+		ctx := context.TODO()
+		c := mistral.New("fakeApiKey", mistral.WithBaseApiUrl(mockServer.URL))
+
+		// When
+		res, err := c.ListModels(ctx)
+
+		// Then
+		assert.NoError(t, err)
+		assert.Equal(t, 6, len(res))
+		assert.Equal(t, "mistral-medium-latest", res[0].Id)
+	})
+
+	t.Run("should return error if API returns 500", func(t *testing.T) {
+		// Given
+		mockServer := makeMockServerWithCapture(t, "GET", "/v1/models", `{"error": "internal error"}`, http.StatusInternalServerError, nil)
+		defer mockServer.Close()
+
+		ctx := context.TODO()
+		c := mistral.New("fakeApiKey", mistral.WithBaseApiUrl(mockServer.URL))
+
+		// When
+		res, err := c.ListModels(ctx)
+
+		// Then
+		assert.Error(t, err)
+		assert.Nil(t, res)
+	})
+
+	t.Run("should return error if JSON is invalid", func(t *testing.T) {
+		// Given
+		mockServer := makeMockServerWithCapture(t, "GET", "/v1/models", `invalid json`, http.StatusOK, nil)
+		defer mockServer.Close()
+
+		ctx := context.TODO()
+		c := mistral.New("fakeApiKey", mistral.WithBaseApiUrl(mockServer.URL))
+
+		// When
+		res, err := c.ListModels(ctx)
+
+		// Then
+		assert.Error(t, err)
+		assert.Nil(t, res)
+	})
+}
+
+func TestClientImpl_SearchModels(t *testing.T) {
 	t.Run("should return models with chat completion and tool calling capabilities", func(t *testing.T) {
 		// Given
 		var gotReq string
@@ -190,7 +241,8 @@ func TestClientImpl_SearchModelsByCapabilities(t *testing.T) {
 		defer mockServer.Close()
 
 		ctx := context.TODO()
-		c := mistral.New("fakeApiKey", mistral.WithBaseApiUrl(mockServer.URL))
+		c := mistral.New("fakeApiKey",
+			mistral.WithBaseApiUrl(mockServer.URL), mistral.WithVerbose(true))
 
 		// When
 		res, err := c.SearchModels(ctx, &mistral.ModelCapabilities{
@@ -224,6 +276,123 @@ func TestClientImpl_SearchModelsByCapabilities(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, 1, len(res))
 		assert.Equal(t, "mistral-moderation-latest", res[0].Id)
+	})
+
+	t.Run("should return error if ListModels fails", func(t *testing.T) {
+		// Given
+		mockServer := makeMockServerWithCapture(t, "GET", "/v1/models", `{"error": "internal error"}`, http.StatusInternalServerError, nil)
+		defer mockServer.Close()
+
+		ctx := context.TODO()
+		c := mistral.New("fakeApiKey", mistral.WithBaseApiUrl(mockServer.URL))
+
+		// When
+		res, err := c.SearchModels(ctx, &mistral.ModelCapabilities{
+			CompletionChat: true,
+		})
+
+		// Then
+		assert.Error(t, err)
+		assert.Nil(t, res)
+	})
+}
+
+func TestClientImpl_GetModel(t *testing.T) {
+	t.Run("should return model card if exists", func(t *testing.T) {
+		// Given
+		mockServer := makeMockServerWithCapture(t, "GET", "/v1/models/mistral-embed-2507",
+			`{
+				"object": "model",
+				"created": 1766520693,
+				"owned_by": "mistralai",
+				"name": "mistral-embed",		
+				"id": "mistral-embed-2507",
+				"capabilities": {
+					"completion_chat": true,
+					"function_calling": true,
+					"completion_fim": false
+				},
+				"aliases": ["mistral-embed-2507", "mistral-embed"]
+			}`, http.StatusOK, nil)
+		defer mockServer.Close()
+
+		expectedModel := &mistral.BaseModelCard{
+			Name:    "mistral-embed",
+			Id:      "mistral-embed-2507",
+			OwnedBy: "mistralai",
+			Object:  "model",
+			Created: 1766520693,
+			Capabilities: mistral.ModelCapabilities{
+				CompletionChat:  true,
+				FunctionCalling: true,
+				CompletionFim:   false,
+			},
+			Aliases: []string{
+				"mistral-embed-2507",
+				"mistral-embed",
+			},
+		}
+
+		client := mistral.New("fakeApiKey", mistral.WithBaseApiUrl(mockServer.URL))
+		ctx := context.TODO()
+
+		// When
+		res, err := client.GetModel(ctx, "mistral-embed-2507")
+
+		// Then
+		assert.NoError(t, err)
+		assert.Equal(t, expectedModel, res)
+	})
+
+	t.Run("should return ErrModelNotFound if model does not exist", func(t *testing.T) {
+		// Given
+		mockServer := makeMockServerWithCapture(t, "GET", "/v1/models/non-existent",
+			`{"message": "Model not found"}`, http.StatusNotFound, nil)
+		defer mockServer.Close()
+
+		client := mistral.New("fakeApiKey", mistral.WithBaseApiUrl(mockServer.URL))
+		ctx := context.TODO()
+
+		// When
+		res, err := client.GetModel(ctx, "non-existent")
+
+		// Then
+		assert.ErrorIs(t, err, mistral.ErrModelNotFound)
+		assert.Nil(t, res)
+	})
+
+	t.Run("should return error if API returns 500", func(t *testing.T) {
+		// Given
+		mockServer := makeMockServerWithCapture(t, "GET", "/v1/models/mistral-medium",
+			`{"error": "internal error"}`, http.StatusInternalServerError, nil)
+		defer mockServer.Close()
+
+		client := mistral.New("fakeApiKey", mistral.WithBaseApiUrl(mockServer.URL))
+		ctx := context.TODO()
+
+		// When
+		res, err := client.GetModel(ctx, "mistral-medium")
+
+		// Then
+		assert.Error(t, err)
+		assert.Nil(t, res)
+	})
+
+	t.Run("should return error if JSON is invalid", func(t *testing.T) {
+		// Given
+		mockServer := makeMockServerWithCapture(t, "GET", "/v1/models/mistral-medium",
+			`invalid json`, http.StatusOK, nil)
+		defer mockServer.Close()
+
+		client := mistral.New("fakeApiKey", mistral.WithBaseApiUrl(mockServer.URL))
+		ctx := context.TODO()
+
+		// When
+		res, err := client.GetModel(ctx, "mistral-medium")
+
+		// Then
+		assert.Error(t, err)
+		assert.Nil(t, res)
 	})
 }
 
