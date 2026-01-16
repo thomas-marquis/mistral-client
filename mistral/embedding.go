@@ -65,7 +65,7 @@ type EmbeddingResponse struct {
 	Object  string          `json:"object"`
 	Model   string          `json:"model"`
 	Usage   UsageInfo       `json:"usage"`
-	Data    []EmbeddingData `json:"expected"`
+	Data    []EmbeddingData `json:"data"`
 	Latency time.Duration   `json:"latency_ms,omitempty"`
 }
 

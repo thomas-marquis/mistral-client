@@ -19,7 +19,7 @@ func TestClient_Embeddings(t *testing.T) {
 		mockServer := makeMockServerWithCapture(t, "POST", "/v1/embeddings", `{
 			"id": "azerty",
 			"object": "list",
-			"expected": [
+			"data": [
 				{
 					"object": "embedding",
 					"embedding": [0.0001, 0.0002, 0.0003],
@@ -67,7 +67,7 @@ func TestClient_Embeddings(t *testing.T) {
 		mockServer := makeMockServerWithCapture(t, "POST", "/v1/embeddings", `{
 			"id": "azerty",
 			"object": "list",
-			"expected": [
+			"data": [
 				{
 					"object": "embedding",
 					"embedding": [0.0001, 0.0002, 0.0003],
@@ -137,7 +137,7 @@ func TestClient_Embeddings(t *testing.T) {
 				"object":"list",
 				"model":"mistral-embed",
 				"usage":{"prompt_tokens":0,"total_tokens":0},
-				"expected":[{"object":"embedding","index":0,"embedding":[0.1,0.2,0.3]}]
+				"data":[{"object":"embedding","index":0,"embedding":[0.1,0.2,0.3]}]
 			}`))
 		}))
 		defer srv.Close()
