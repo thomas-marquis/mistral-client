@@ -13,12 +13,12 @@ import (
 )
 
 const (
-	DefaultCacheDir = "./mistral/cache"
+	DefaultCacheDir = "./.mistral/cache"
 )
 
 var (
 	ErrCacheMiss    = cache.ErrCacheMiss
-	ErrCacheFailure = cache.ErrCacheFailure
+	ErrCacheFailure = errors.New("cache failure")
 )
 
 type cacheConfig struct {
@@ -36,12 +36,17 @@ type CachedData struct {
 	CompletionChunks       []*CompletionChunk
 }
 
-type cachedClientDecorator struct {
-	client Client
-	engine cache.Engine
+type CacheEngine interface {
+	Get(ctx context.Context, key string) ([]byte, error)
+	Set(ctx context.Context, key string, data []byte) error
 }
 
-func newCachedClient(client Client, engine cache.Engine) (Client, error) {
+type cachedClientDecorator struct {
+	client Client
+	engine CacheEngine
+}
+
+func newCachedClient(client Client, engine CacheEngine) (Client, error) {
 	return &cachedClientDecorator{client: client, engine: engine}, nil
 }
 

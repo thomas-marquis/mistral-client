@@ -6,8 +6,7 @@ import (
 )
 
 var (
-	ErrCacheMiss    = errors.New("cache miss")
-	ErrCacheFailure = errors.New("something went wrong with caching")
+	ErrCacheMiss = errors.New("cache miss")
 )
 
 type Engine interface {

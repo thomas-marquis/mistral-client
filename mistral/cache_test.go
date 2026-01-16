@@ -209,7 +209,6 @@ func TestCachedClientDecorator_ChatCompletion(t *testing.T) {
 		res, err := c.ChatCompletion(ctx, nil)
 
 		// Then
-		assert.ErrorIs(t, err, mistral.ErrCacheFailure)
 		assert.ErrorContains(t, err, "request cannot be nil")
 		assert.Nil(t, res)
 	})

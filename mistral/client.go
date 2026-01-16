@@ -112,7 +112,7 @@ func New(apiKey string, opts ...Option) Client {
 }
 
 // NewCached decorates a client instance to cache responses with the given cache engine.
-func NewCached(client Client, cacheEngine cache.Engine) Client {
+func NewCached(client Client, cacheEngine CacheEngine) Client {
 	cc, err := newCachedClient(client, cacheEngine)
 	if err != nil {
 		logger.Fatalf("Failed to initialize local cache: %v", err)
@@ -194,6 +194,7 @@ func WithClientTransport(t http.RoundTripper) Option {
 func WithLocalCache() Option {
 	return func(c *clientImpl) {
 		c.cacheConfig.enabled = true
+		c.cacheConfig.cacheDir = DefaultCacheDir
 	}
 }
 
