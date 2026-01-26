@@ -102,4 +102,4 @@ for _, vector := range res.Embeddings() {
 
 All contributions are welcome! Feel free to open an issue or submit a PR. ✨
 
-Check out [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
+Check out [CONTRIBUTE.md](CONTRIBUTE.md) for more details.
