@@ -8,8 +8,7 @@ import (
 	"github.com/thomas-marquis/mistral-client/mlflow"
 )
 
-// This example needs a running-local MLflow server with a chat prompt named "python_dev_chat"
-
+// This example needs a running-local MLflow server with a chat prompt named "python_dev_chat" with the following content:
 var (
 	// System prompt:
 	_ = `
