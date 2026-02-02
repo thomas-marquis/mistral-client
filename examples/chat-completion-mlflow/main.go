@@ -39,6 +39,9 @@ func main() {
 	messages, err := mistral.MessagesFromRegisteredPrompt(ctx, promptRegistry,
 		"python_dev_chat", mlflow.VersionLatest,
 		map[string]any{"specifications": "an image viewer application"})
+	if err != nil {
+		panic(err)
+	}
 
 	req := mistral.NewChatCompletionRequest("mistral-small-latest", messages)
 	req.MaxTokens = 128_000

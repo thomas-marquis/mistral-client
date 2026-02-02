@@ -15,10 +15,19 @@ var (
 	logger = log.New(os.Stdout, "mlflow-client: ", log.LstdFlags|log.Lshortfile)
 )
 
+// Version represents either a version (e.g. "1", "2", etc.) or an alias when prefixed by "@" (e.g. "@production").
 type Version string
 
 func (v Version) String() string {
 	return string(v)
+}
+
+func (v Version) IsAlias() bool {
+	return strings.HasPrefix(v.String(), "@")
+}
+
+func (v Version) TrimAlias() string {
+	return strings.TrimPrefix(v.String(), "@")
 }
 
 const (
@@ -26,6 +35,8 @@ const (
 )
 
 type PromptRegistry interface {
+	// Get retrieves a prompt by name and version from the prompt registry.
+	// If the version is prefixed by "@", it will be treated as an alias. E.g. version = "@production" => alias = "production".
 	Get(ctx context.Context, name string, version Version, opts ...PromptOption) (Prompt, error)
 }
 
@@ -83,8 +94,8 @@ func (r *promptRegistryImpl) Get(_ context.Context, name string, version Version
 	qp.Add("name", name)
 
 	var epUrl string
-	if version == VersionLatest {
-		qp.Add("alias", VersionLatest.String())
+	if version == VersionLatest || version.IsAlias() {
+		qp.Add("alias", version.TrimAlias())
 		epUrl = fmt.Sprintf("%s/api/2.0/mlflow/registered-models/alias?%s", r.mlflowUrl, qp.Encode())
 	} else {
 		qp.Add("version", version.String())
