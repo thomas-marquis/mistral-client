@@ -113,6 +113,7 @@ for _, vector := range res.Embeddings() {
 You can find more detailed examples in the `examples` folder.
 
 **Interacting with Mistral models:**
+
 - [Chat Completion](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-completion/main.go): Basic usage of the chat completion API.
 - [Chat Completion (Advanced)](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-completion-advanced/main.go): Advanced options like retry, rate limiting, and timeout.
 - [Chat completion (with structured output)](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-completion-constrained/main.go): Constrain the model output to a specific schema.
@@ -124,10 +125,12 @@ You can find more detailed examples in the `examples` folder.
 - [Tools with streaming](https://github.com/thomas-marquis/mistral-client/tree/main/examples/tools-streaming/main.go): Use tools and function calling with streaming.
 
 **Model discovery:**
+
 - [Get Model](https://github.com/thomas-marquis/mistral-client/tree/main/examples/get-model/main.go): Retrieve details for a specific model.
 - [List Models](https://github.com/thomas-marquis/mistral-client/tree/main/examples/list-models/main.go): List and search available models.
 
 **Specific features:**
+
 - [Caching](https://github.com/thomas-marquis/mistral-client/tree/main/examples/cache/main.go): Cache responses to avoid unnecessary repeated API calls.
 - [MLflow integration](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-completion-mlflow/main.go): Get your prompt from MLflow Prompt Registry.
 - [Use Go templates in your prompts](https://github.com/thomas-marquis/mistral-client/tree/main/examples/mlflow-prompts-go-template/main.go): Write your prompts with the Go template and Sprig syntax and render them in your code.

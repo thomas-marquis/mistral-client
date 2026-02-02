@@ -2,9 +2,10 @@
 
 Explore the Mistral's model catalogue and find information about the models.
 
-Check the following examples:
-- [Get Model](https://github.com/thomas-marquis/mistral-client/tree/main/examples/get-model/main.go)
-- [List Models](https://github.com/thomas-marquis/mistral-client/tree/main/examples/list-models/main.go)
+!!! example "Check the following examples"
+
+    - [Get Model](https://github.com/thomas-marquis/mistral-client/tree/main/examples/get-model/main.go)
+    - [List Models](https://github.com/thomas-marquis/mistral-client/tree/main/examples/list-models/main.go)
 
 ## List models
 

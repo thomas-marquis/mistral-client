@@ -15,9 +15,10 @@ mistral.NewUserMessage(mistral.ContentChunks{
 
 1. The chunks order matters! Try different combinations to see what works best for you.
 
-Check the following examples:
-- [Chat Audio](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-audio/main.go)
-- [Chat Vision](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-vision/main.go)
+!!! example "Check the following examples"
+
+     - [Chat Audio](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-audio/main.go)
+     - [Chat Vision](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-vision/main.go)
 
 ## Supported chunks
 

@@ -9,8 +9,9 @@ We send a list of messages to the API and receive the next message from the assi
 - the first message is a user or a system message
 - the last message is a user or a tool message
 
-Check the following example:
-- [Chat Completion](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-completion/main.go)
+!!! example "Check the following example"
+
+    - [Chat Completion](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-completion/main.go)
 
 ## Sending a request
 

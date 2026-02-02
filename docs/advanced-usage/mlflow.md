@@ -13,17 +13,22 @@ A prompt originally written for a Python project can be used in a Golang project
 `mistral-client` integrates with [MLflow Prompt Registry](https://mlflow.org/docs/latest/genai/prompt-registry/).
 That means you can store your prompts on MLflow and use them in your Go code seamlessly.
 
-Check the following examples:
-- [Chat completion with MLflow integration](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-completion-mlflow/main.go)
-- [Prompt rendering with Go templates](https://github.com/thomas-marquis/mistral-client/tree/main/examples/mlflow-prompts-go-template/main.go)
+!!! example "Check the following examples"
+
+    - [Chat completion with MLflow integration](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-completion-mlflow/main.go)
+    - [Prompt rendering with Go templates](https://github.com/thomas-marquis/mistral-client/tree/main/examples/mlflow-prompts-go-template/main.go)
 
 ## Setup
 
-These features are located in the `mlflow` package.
+These features are located in the `mistral-client`'s `mlflow` package.
 
 Start by creating a `PromptRegistry`:
 
 ```go
+import "github.com/thomas-marquis/mistral-client/mlflow"
+
+// ...
+
 registry, err := mlflow.NewPromptRegistry(mlflowUrl)
 ```
 
@@ -87,16 +92,18 @@ This function will return a list of messages with formatted content.
 
 Here, we define on MLflow the very same prompt as above, but using the chat format:
 
-**System**:
-```
-You're a professional {{occupation}}.
-```
+=== "System"
 
-**User**:
-```
-Please answer the following question:
-{{question}}
-```
+    ```
+    You're a professional {{occupation}}.
+    ```
+
+=== "User"
+
+    ```
+    Please answer the following question:
+    {{question}}
+    ```
 
 The code to load it is **exactly the same** as for the text prompt.
 The library will automatically detect the chat format and return a list of messages.
@@ -113,7 +120,7 @@ Three implementations are available:
 
 - **Raw renderer**: simply return the template as is.
 - **Simple renderer**: use the `{{...}}` placeholders. It does not support nested placeholders.
-- **Go template renderer**: use the [Go template syntax](https://pkg.go.dev/text/template. All the [Sprig](https://masterminds.github.io/sprig/) functions are available.
+- **Go template renderer**: use the [Go template syntax](https://pkg.go.dev/text/template). All the [Sprig](https://masterminds.github.io/sprig/) functions are available.
 
 ### Simple format
 
@@ -124,16 +131,18 @@ Thus, `mistral-client` uses the Simple format renderer by default, you don't nee
 
 What our prompt looks like on MLflow:
 
-**System**:
-```
-You're a professional {{ .occupation | upper }}.
-```
+=== "System"
 
-**User**:
-```
-Please answer the following question:
-{{ .question }}
-```
+    ```
+    You're a professional {{ .occupation | upper }}.
+    ```
+
+=== "User"
+
+    ```
+    Please answer the following question:
+    {{ .question }}
+    ```
 
 Then, you need to specify the `mlflow.WithGoTemplateRenderer` option:
 
@@ -150,13 +159,13 @@ messages, err := mistral.MessagesFromRegisteredPrompt(
 
 1. Specify which renderer to use as an option.
 
-**Tip**
+!!! tip
 
-Good documentation to learn how to use Go templates is the Helm documentation.
-Even though you're not familiar with Helm, here's a selection of some insightful pages from its documentation that may help you write templates:
-
-- [Ifs and loops](https://helm.sh/docs/chart_template_guide/control_structures#looping-with-the-range-action)
-- [Variable syntax](https://helm.sh/docs/chart_template_guide/variables)
+    Good documentation to learn how to use Go templates is the Helm documentation.
+    Even though you're not familiar with Helm, here's a selection of some insightful pages from its documentation that may help you write templates:
+   
+    - [Ifs and loops](https://helm.sh/docs/chart_template_guide/control_structures#looping-with-the-range-action)
+    - [Variable syntax](https://helm.sh/docs/chart_template_guide/variables)
 
 ### Other formats
 

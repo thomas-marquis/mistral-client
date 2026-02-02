@@ -65,5 +65,6 @@ if err := msg.Output(&joke); err != nil {
 }
 ```
 
-Check the following example:
-- [Chat completion (with structured output)](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-completion-constrained/main.go)
+!!! example "Check the following example"
+
+     - [Chat completion (with structured output)](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-completion-constrained/main.go)
