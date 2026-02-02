@@ -5,11 +5,14 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/thomas-marquis/mistral-client/internal/shared"
 )
 
 type CompletionConfig struct {
@@ -305,8 +308,13 @@ func (c *clientImpl) ChatCompletion(
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	response, lat, err := c.sendRequest(ctx, http.MethodPost, url, jsonValue)
+	response, lat, err := shared.SendRequest(ctx, c.httpClient, http.MethodPost, url, jsonValue,
+		c.baseHeaders, c.reqConfig)
 	if err != nil {
+		apiErr := shared.ApiError{}
+		if errors.As(err, &apiErr) {
+			return nil, NewApiError(apiErr.StatusCode, apiErr.Content)
+		}
 		return nil, err
 	}
 	defer response.Body.Close() //nolint:errcheck
@@ -400,8 +408,13 @@ func (c *clientImpl) ChatCompletionStream(ctx context.Context, req *ChatCompleti
 
 	outChan := make(chan *CompletionChunk)
 
-	res, lat, err := c.sendRequest(ctx, http.MethodPost, url, jsonValue)
+	res, lat, err := shared.SendRequest(ctx, c.httpClient, http.MethodPost, url, jsonValue,
+		c.baseHeaders, c.reqConfig)
 	if err != nil {
+		apiErr := shared.ApiError{}
+		if errors.As(err, &apiErr) {
+			return nil, NewApiError(apiErr.StatusCode, apiErr.Content)
+		}
 		return nil, err
 	}
 

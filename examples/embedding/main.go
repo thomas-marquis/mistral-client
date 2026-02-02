@@ -15,7 +15,7 @@ func main() {
 		panic("Please set MISTRAL_API_KEY environment variable")
 	}
 	client := mistral.New(apiKey,
-		mistral.WithClientTimeout(60*time.Second))
+		mistral.WithClientTimeout(15*time.Second))
 
 	texts := []string{
 		"ipsum eiusmod",

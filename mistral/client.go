@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/thomas-marquis/mistral-client/internal/shared"
 	"github.com/thomas-marquis/mistral-client/mistral/internal/cache"
 	"golang.org/x/time/rate"
 )
@@ -57,6 +58,8 @@ type clientImpl struct {
 	retryStatusCodes map[int]struct{}
 
 	cacheConfig cacheConfig
+	reqConfig   shared.RequestConfig
+	baseHeaders map[string]string
 }
 
 type Option func(impl *clientImpl)
@@ -83,6 +86,10 @@ func New(apiKey string, opts ...Option) Client {
 		retryStatusCodes: make(map[int]struct{}),
 
 		cacheConfig: cacheConfig{cacheDir: DefaultCacheDir, enabled: false},
+		baseHeaders: map[string]string{
+			"Content-Type":  "application/json; charset=utf-8",
+			"Authorization": "Bearer " + apiKey,
+		},
 	}
 
 	for _, code := range []int{
@@ -106,6 +113,14 @@ func New(apiKey string, opts ...Option) Client {
 		}
 
 		return NewCached(c, engine)
+	}
+
+	c.reqConfig = shared.RequestConfig{
+		RetryMaxRetries:  c.retryMaxRetries,
+		RetryWaitMin:     c.retryWaitMin,
+		RetryWaitMax:     c.retryWaitMax,
+		RetryStatusCodes: c.retryStatusCodes,
+		Verbose:          c.verbose,
 	}
 
 	return c

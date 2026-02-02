@@ -3,9 +3,12 @@ package mistral
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/thomas-marquis/mistral-client/internal/shared"
 )
 
 type EmbeddingVector []float32
@@ -111,8 +114,13 @@ func (c *clientImpl) Embeddings(ctx context.Context, req *EmbeddingRequest) (*Em
 		return nil, fmt.Errorf("failed to marshal req body: %w", err)
 	}
 
-	response, lat, err := c.sendRequest(ctx, http.MethodPost, url, jsonValue)
+	response, lat, err := shared.SendRequest(ctx, c.httpClient, http.MethodPost, url, jsonValue,
+		c.baseHeaders, c.reqConfig)
 	if err != nil {
+		apiErr := shared.ApiError{}
+		if errors.As(err, &apiErr) {
+			return nil, NewApiError(apiErr.StatusCode, apiErr.Content)
+		}
 		return nil, err
 	}
 	defer response.Body.Close() //nolint:errcheck
