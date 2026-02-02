@@ -125,7 +125,7 @@ func (c *clientImpl) Embeddings(ctx context.Context, req *EmbeddingRequest) (*Em
 	}
 	defer response.Body.Close() //nolint:errcheck
 
-	if c.verbose {
+	if c.reqConfig.Verbose {
 		logger.Println("POST /v1/embeddings called")
 	}
 

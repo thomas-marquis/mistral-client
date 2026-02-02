@@ -78,7 +78,7 @@ func (c *clientImpl) ListModels(ctx context.Context) ([]*BaseModelCard, error) {
 	}
 	defer resp.Body.Close() //nolint:errcheck
 
-	if c.verbose {
+	if c.reqConfig.Verbose {
 		logger.Printf("GET /v1/models called")
 	}
 
@@ -124,7 +124,7 @@ func (c *clientImpl) GetModel(ctx context.Context, modelId string) (*BaseModelCa
 	}
 	defer resp.Body.Close() //nolint:errcheck
 
-	if c.verbose {
+	if c.reqConfig.Verbose {
 		logger.Printf("GET /v1/models/%s called", modelId)
 	}
 

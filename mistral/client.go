@@ -43,12 +43,6 @@ type clientImpl struct {
 
 	limiter    *rate.Limiter
 	httpClient *http.Client
-	verbose    bool
-
-	retryMaxRetries  int
-	retryWaitMin     time.Duration
-	retryWaitMax     time.Duration
-	retryStatusCodes map[int]struct{}
 
 	cacheConfig cacheConfig
 	reqConfig   shared.RequestConfig
@@ -72,11 +66,13 @@ func New(apiKey string, opts ...Option) Client {
 		httpClient: &http.Client{
 			Timeout: defaultTimeout,
 		},
-		verbose:          false,
-		retryMaxRetries:  3,
-		retryWaitMin:     200 * time.Millisecond,
-		retryWaitMax:     1 * time.Second,
-		retryStatusCodes: make(map[int]struct{}),
+		reqConfig: shared.RequestConfig{
+			Verbose:          false,
+			RetryMaxRetries:  3,
+			RetryWaitMin:     200 * time.Millisecond,
+			RetryWaitMax:     1 * time.Second,
+			RetryStatusCodes: make(map[int]struct{}),
+		},
 
 		cacheConfig: cacheConfig{cacheDir: DefaultCacheDir, enabled: false},
 		baseHeaders: map[string]string{
@@ -92,7 +88,7 @@ func New(apiKey string, opts ...Option) Client {
 		http.StatusServiceUnavailable,
 		http.StatusGatewayTimeout,
 	} {
-		c.retryStatusCodes[code] = struct{}{}
+		c.reqConfig.RetryStatusCodes[code] = struct{}{}
 	}
 
 	for _, opt := range opts {
@@ -106,14 +102,6 @@ func New(apiKey string, opts ...Option) Client {
 		}
 
 		return NewCached(c, engine)
-	}
-
-	c.reqConfig = shared.RequestConfig{
-		RetryMaxRetries:  c.retryMaxRetries,
-		RetryWaitMin:     c.retryWaitMin,
-		RetryWaitMax:     c.retryWaitMax,
-		RetryStatusCodes: c.retryStatusCodes,
-		Verbose:          c.verbose,
 	}
 
 	return c
@@ -148,7 +136,7 @@ func WithRateLimiter(rateLimiter *rate.Limiter) Option {
 
 func WithVerbose(verbose bool) Option {
 	return func(c *clientImpl) {
-		c.verbose = verbose
+		c.reqConfig.Verbose = verbose
 	}
 }
 
@@ -170,9 +158,9 @@ func WithRetry(maxRetries int, waitMin, waitMax time.Duration) Option {
 	}
 
 	return func(c *clientImpl) {
-		c.retryMaxRetries = maxRetries
-		c.retryWaitMin = waitMin
-		c.retryWaitMax = waitMax
+		c.reqConfig.RetryMaxRetries = maxRetries
+		c.reqConfig.RetryWaitMin = waitMin
+		c.reqConfig.RetryWaitMax = waitMax
 	}
 }
 
@@ -183,9 +171,9 @@ func WithRetryStatusCodes(codes ...int) Option {
 		if len(codes) == 0 {
 			return
 		}
-		c.retryStatusCodes = make(map[int]struct{})
+		c.reqConfig.RetryStatusCodes = make(map[int]struct{})
 		for _, code := range codes {
-			c.retryStatusCodes[code] = struct{}{}
+			c.reqConfig.RetryStatusCodes[code] = struct{}{}
 		}
 	}
 }

@@ -319,7 +319,7 @@ func (c *clientImpl) ChatCompletion(
 	}
 	defer response.Body.Close() //nolint:errcheck
 
-	if c.verbose {
+	if c.reqConfig.Verbose {
 		logger.Printf("POST /v1/chat/completions called")
 	}
 
@@ -416,6 +416,10 @@ func (c *clientImpl) ChatCompletionStream(ctx context.Context, req *ChatCompleti
 			return nil, NewApiError(apiErr.StatusCode, apiErr.Content)
 		}
 		return nil, err
+	}
+
+	if c.reqConfig.Verbose {
+		logger.Printf("POST /v1/chat/completions called in streaming mode")
 	}
 
 	go func() {
