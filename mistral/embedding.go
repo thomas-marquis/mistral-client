@@ -130,7 +130,7 @@ func (c *clientImpl) Embeddings(ctx context.Context, req *EmbeddingRequest) (*Em
 	}
 
 	var resp EmbeddingResponse
-	if err = unmarshallBody(response, &resp); err != nil {
+	if err = json.NewDecoder(response.Body).Decode(&resp); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response body: %w", err)
 	}
 

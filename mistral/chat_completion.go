@@ -324,7 +324,7 @@ func (c *clientImpl) ChatCompletion(
 	}
 
 	var resp ChatCompletionResponse
-	if err := unmarshallBody(response, &resp); err != nil {
+	if err := json.NewDecoder(response.Body).Decode(&resp); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response body: %w", err)
 	}
 	resp.Latency = lat
