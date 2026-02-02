@@ -3,6 +3,9 @@
 
 Embeddings are numerical representations of text that can be used for tasks like semantic search, clustering, or classification.
 
+Check the following example:
+- [Embeddings](https://github.com/thomas-marquis/mistral-client/tree/main/examples/embedding/main.go)
+
 ## Create embeddings
 
 To create embeddings, use the `Embeddings` method from a `Client` instance.

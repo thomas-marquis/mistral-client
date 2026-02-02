@@ -6,6 +6,9 @@ This feature is particularly useful during **local development**: it allows you 
 
 When enabled, the client stores the responses of `ChatCompletion`, `ChatCompletionStream`, and `Embeddings` locally.
 
+Check the following example:
+- [Caching](https://github.com/thomas-marquis/mistral-client/tree/main/examples/cache/main.go)
+
 ## Enabling the cache
 
 You can enable the local file system cache when initializing the client using options.

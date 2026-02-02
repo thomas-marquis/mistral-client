@@ -66,6 +66,7 @@ nav:
       - Embed a text: basic-usage/embed.md
       - Enable caching: basic-usage/caching.md
   - Advanced usage:
+      - MLflow integration: advanced-usage/mlflow.md
       - Complex input data: advanced-usage/complex-input.md
       - "Testing: mock the client": advanced-usage/mock.md
       - Rate limiting: advanced-usage/rate-limiting.md
