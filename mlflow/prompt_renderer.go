@@ -1,8 +1,12 @@
 package mlflow
 
 import (
+	"bytes"
 	"fmt"
 	"regexp"
+	"text/template"
+
+	"github.com/Masterminds/sprig"
 )
 
 type PromptRenderer interface {
@@ -12,6 +16,7 @@ type PromptRenderer interface {
 var (
 	_ PromptRenderer = (*simpleFormatRenderer)(nil)
 	_ PromptRenderer = (*rawRenderer)(nil)
+	_ PromptRenderer = (*goTemplateRenderer)(nil)
 
 	defaultRenderer = &simpleFormatRenderer{}
 )
@@ -58,4 +63,20 @@ type rawRenderer struct{}
 
 func (r *rawRenderer) Render(raw string, _ map[string]any) (string, error) {
 	return raw, nil
+}
+
+type goTemplateRenderer struct{}
+
+func (r *goTemplateRenderer) Render(raw string, params map[string]any) (string, error) {
+	tmpl, err := template.New("prompt").Option("missingkey=error").Funcs(sprig.TxtFuncMap()).Parse(raw)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse template: %w", err)
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, params); err != nil {
+		return "", fmt.Errorf("failed to execute template: %w", err)
+	}
+
+	return buf.String(), nil
 }
