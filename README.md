@@ -20,6 +20,7 @@ HTTP client for Mistral AI written in Go. 🚀
 - **Advanced Client**: Built-in retry logic, rate limiting, and custom HTTP client configuration.
 - **Model Management**: List, search, and retrieve details for Mistral models.
 - **Caching**: Cache responses to avoid unnecessary repeated API calls (e.g. for local development runs).
+- **MLflow integration**: Get prompts from MLflow Prompt registry, then render and use them in chat completions.
 
 ## 📦 Installation
 
@@ -102,4 +103,4 @@ for _, vector := range res.Embeddings() {
 
 All contributions are welcome! Feel free to open an issue or submit a PR. ✨
 
-Check out [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
+Check out [CONTRIBUTE.md](CONTRIBUTE.md) for more details.

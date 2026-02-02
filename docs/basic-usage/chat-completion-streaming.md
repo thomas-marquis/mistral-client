@@ -2,6 +2,11 @@
 
 Streaming chat completion allows you to receive the assistant's response in real-time, as it is being generated. This is particularly useful for building interactive applications like chatbots where you want to show the text to the user as soon as possible.
 
+!!! example "Check the following examples"
+
+     - [Chat Streaming](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-streaming/main.go)
+     - [Tools with streaming](https://github.com/thomas-marquis/mistral-client/tree/main/examples/tools-streaming/main.go)
+
 ## Sending a streaming request
 
 To perform a streaming chat completion, you use the `ChatCompletionStream` method. The request is created similarly to a standard chat completion, but usually with the `NewChatCompletionStreamRequest` helper which sets the `Stream` parameter to `true`.

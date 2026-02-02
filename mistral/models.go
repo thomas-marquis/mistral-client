@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/thomas-marquis/mistral-client/internal/shared"
 )
 
 var (
@@ -69,13 +71,14 @@ type listModelResponse struct {
 func (c *clientImpl) ListModels(ctx context.Context) ([]*BaseModelCard, error) {
 	url := fmt.Sprintf("%s/v1/models", c.baseURL)
 
-	resp, _, err := c.sendRequest(ctx, http.MethodGet, url, nil)
+	resp, _, err := shared.SendRequest(ctx, c.httpClient, http.MethodGet, url, nil,
+		c.baseHeaders, c.reqConfig)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close() //nolint:errcheck
 
-	if c.verbose {
+	if c.reqConfig.Verbose {
 		logger.Printf("GET /v1/models called")
 	}
 
@@ -109,10 +112,11 @@ func (c *clientImpl) SearchModels(ctx context.Context, capabilities *ModelCapabi
 func (c *clientImpl) GetModel(ctx context.Context, modelId string) (*BaseModelCard, error) {
 	url := fmt.Sprintf("%s/v1/models/%s", c.baseURL, modelId)
 
-	resp, _, err := c.sendRequest(ctx, http.MethodGet, url, nil)
+	resp, _, err := shared.SendRequest(ctx, c.httpClient, http.MethodGet, url, nil,
+		c.baseHeaders, c.reqConfig)
 	if err != nil {
-		var apiErr ApiError
-		if ok := errors.As(err, &apiErr); ok && apiErr.Code() == http.StatusNotFound {
+		var apiErr shared.ApiError
+		if ok := errors.As(err, &apiErr); ok && apiErr.StatusCode == http.StatusNotFound {
 			return nil, ErrModelNotFound
 		}
 
@@ -120,7 +124,7 @@ func (c *clientImpl) GetModel(ctx context.Context, modelId string) (*BaseModelCa
 	}
 	defer resp.Body.Close() //nolint:errcheck
 
-	if c.verbose {
+	if c.reqConfig.Verbose {
 		logger.Printf("GET /v1/models/%s called", modelId)
 	}
 

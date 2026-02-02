@@ -43,6 +43,17 @@ To ensure everything is working correctly, run the test suite:
 go test ./...
 ```
 
+### [Optional] Setup local MLflow server
+
+If you want to test the integration with MLflow, you can start a local MLflow server. Follow these steps:
+
+- Ensure Docker is installed on your machine
+- Run the command `./tools/start_mlflow.sh`
+- If needed, run `chmod +x ./tools/*.sh` first
+- To show the logs, run `./tools/mlflow_logs.sh`
+
+You can edit or customize the MLflow server configuration in the `docker/docker-compose.mlflow.yaml` file.
+
 ## 📁 Project Structure
 
 The project follows a standard Go structure:
@@ -85,3 +96,4 @@ A contribution is considered complete when:
 5.  **CI**: All GitHub Action workflows pass.
 6.  **Example**: If you added a new feature, a corresponding example should be added in the `examples/` folder.
 7.  **README**: If the change is significant, update the `README.md` to reflect it.
+8.  **Guidelines**: If needed, update the `.junie/guidelines.md` (and any other AI guideline files) file to reflect the new changes.

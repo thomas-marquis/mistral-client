@@ -5,11 +5,14 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/thomas-marquis/mistral-client/internal/shared"
 )
 
 type CompletionConfig struct {
@@ -305,18 +308,23 @@ func (c *clientImpl) ChatCompletion(
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	response, lat, err := c.sendRequest(ctx, http.MethodPost, url, jsonValue)
+	response, lat, err := shared.SendRequest(ctx, c.httpClient, http.MethodPost, url, jsonValue,
+		c.baseHeaders, c.reqConfig)
 	if err != nil {
+		apiErr := shared.ApiError{}
+		if errors.As(err, &apiErr) {
+			return nil, NewApiError(apiErr.StatusCode, apiErr.Content)
+		}
 		return nil, err
 	}
 	defer response.Body.Close() //nolint:errcheck
 
-	if c.verbose {
+	if c.reqConfig.Verbose {
 		logger.Printf("POST /v1/chat/completions called")
 	}
 
 	var resp ChatCompletionResponse
-	if err := unmarshallBody(response, &resp); err != nil {
+	if err := json.NewDecoder(response.Body).Decode(&resp); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response body: %w", err)
 	}
 	resp.Latency = lat
@@ -400,9 +408,18 @@ func (c *clientImpl) ChatCompletionStream(ctx context.Context, req *ChatCompleti
 
 	outChan := make(chan *CompletionChunk)
 
-	res, lat, err := c.sendRequest(ctx, http.MethodPost, url, jsonValue)
+	res, lat, err := shared.SendRequest(ctx, c.httpClient, http.MethodPost, url, jsonValue,
+		c.baseHeaders, c.reqConfig)
 	if err != nil {
+		apiErr := shared.ApiError{}
+		if errors.As(err, &apiErr) {
+			return nil, NewApiError(apiErr.StatusCode, apiErr.Content)
+		}
 		return nil, err
+	}
+
+	if c.reqConfig.Verbose {
+		logger.Printf("POST /v1/chat/completions called in streaming mode")
 	}
 
 	go func() {

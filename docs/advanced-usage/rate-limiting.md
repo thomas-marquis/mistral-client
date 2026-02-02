@@ -23,3 +23,7 @@ client := mistral.New(apiKey, mistral.WithRateLimiter(rl))
 ```
 
 Learn more about rate limiting with `golang.org/x/time/rate` [in this cool article](https://medium.com/mflow/rate-limiting-in-golang-http-client-a22fba15861a).
+
+!!! example "Check the following example"
+
+     - [Chat Completion (Advanced)](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-completion-advanced/main.go)

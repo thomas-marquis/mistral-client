@@ -27,6 +27,7 @@ go get github.com/thomas-marquis/mistral-client
 - **Structured Output**: Support for JSON Mode and JSON Schema.
 - **Advanced Client**: Built-in retry logic, rate limiting, and custom HTTP client configuration.
 - **Model Management**: List, search, and retrieve details for Mistral models.
+- **MLflow integration**: Get your prompts from MLflow Prompt Registry instead of writing them in your code.
 
 **What makes a difference:**
 
@@ -109,20 +110,36 @@ for _, vector := range res.Embeddings() {
 
 ## Examples
 
-You can find more detailed examples in the `examples` folder:
+You can find more detailed examples in the `examples` folder.
+
+**Interacting with Mistral models:**
 
 - [Chat Completion](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-completion/main.go): Basic usage of the chat completion API.
 - [Chat Completion (Advanced)](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-completion-advanced/main.go): Advanced options like retry, rate limiting, and timeout.
-- [Chat completion (with structured output)](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-completion-constrained/main.go)
+- [Chat completion (with structured output)](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-completion-constrained/main.go): Constrain the model output to a specific schema.
 - [Chat Audio](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-audio/main.go): Transcribe and interact with audio files.
 - [Chat Vision](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-vision/main.go): Interact with images.
+- [Chat Streaming](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-streaming/main.go): Stream responses from the API.
 - [Embeddings](https://github.com/thomas-marquis/mistral-client/tree/main/examples/embedding/main.go): Generate text embeddings.
+- [Tools / Function Calling](https://github.com/thomas-marquis/mistral-client/tree/main/examples/tools/main.go): Use tools and function calling.
+- [Tools with streaming](https://github.com/thomas-marquis/mistral-client/tree/main/examples/tools-streaming/main.go): Use tools and function calling with streaming.
+
+**Model discovery:**
+
 - [Get Model](https://github.com/thomas-marquis/mistral-client/tree/main/examples/get-model/main.go): Retrieve details for a specific model.
 - [List Models](https://github.com/thomas-marquis/mistral-client/tree/main/examples/list-models/main.go): List and search available models.
-- [Tools / Function Calling](https://github.com/thomas-marquis/mistral-client/tree/main/examples/tools/main.go): Use tools and function calling.
+
+**Specific features:**
+
+- [Caching](https://github.com/thomas-marquis/mistral-client/tree/main/examples/cache/main.go): Cache responses to avoid unnecessary repeated API calls.
+- [MLflow integration](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-completion-mlflow/main.go): Get your prompt from MLflow Prompt Registry.
+- [Use Go templates in your prompts](https://github.com/thomas-marquis/mistral-client/tree/main/examples/mlflow-prompts-go-template/main.go): Write your prompts with the Go template and Sprig syntax and render them in your code.
 
 ## Useful Links
 
 - [Go package documentation](https://pkg.go.dev/github.com/thomas-marquis/mistral-client)
 - [GitHub Repository](https://github.com/thomas-marquis/mistral-client)
 - [Mistral AI API Documentation](https://docs.mistral.ai/)
+- [MLflow Prompt Registry documentation](https://mlflow.org/docs/latest/genai/prompt-registry/)
+- [Go template syntax](https://pkg.go.dev/text/template#pkg-overview)
+- [Sprig functions (go template)](https://masterminds.github.io/sprig/)

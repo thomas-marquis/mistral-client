@@ -9,6 +9,11 @@ The models won't call the tools directly (because the tools are external to the 
 - with tool(s) invoked
 - with their input and output
 
+!!! example "Check the following examples"
+
+     - [Tools / Function Calling](https://github.com/thomas-marquis/mistral-client/tree/main/examples/tools/main.go)
+     - [Tools with streaming](https://github.com/thomas-marquis/mistral-client/tree/main/examples/tools-streaming/main.go)
+
 ## Specify tools
 
 Specify a list of tools to use with the `WithTools` option.
