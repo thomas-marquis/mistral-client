@@ -17,8 +17,8 @@ type Prompt interface {
 	Type() PromptType
 	Name() string
 	Version() Version
-	String() string
-	Render(parameters map[string]any) (string, error)
+	//String() string
+	//Render(parameters map[string]any) (string, error)
 }
 
 var (
@@ -30,7 +30,6 @@ type basePrompt struct {
 	name    string
 	version Version
 
-	content    string
 	promptType PromptType
 	renderer   PromptRenderer
 }
@@ -47,16 +46,9 @@ func (p *basePrompt) Version() Version {
 	return p.version
 }
 
-func (p *basePrompt) String() string {
-	return p.content
-}
-
-func (p *basePrompt) Render(parameters map[string]any) (string, error) {
-	return p.renderer.Render(p.content, parameters)
-}
-
 type PromptText struct {
 	basePrompt
+	content string
 }
 
 func NewPromptText(name string, version Version, content string, opts ...PromptOption) *PromptText {
@@ -71,18 +63,31 @@ func NewPromptText(name string, version Version, content string, opts ...PromptO
 			name:       name,
 			version:    version,
 			promptType: PromptTypeText,
-			content:    content,
 			renderer:   cfg.renderer,
 		},
+		content: content,
 	}
+}
+
+func (p *PromptText) RawTextTemplate() string {
+	return p.content
+}
+
+func (p *PromptText) Render(parameters map[string]any) (string, error) {
+	return p.renderer.Render(p.content, parameters)
+}
+
+type PromptChatMessage struct {
+	Role    PromptRole
+	Content string
 }
 
 type PromptChat struct {
 	basePrompt
-	Role PromptRole
+	messages []PromptChatMessage
 }
 
-func NewPromptChat(name string, version Version, content string, role PromptRole, opts ...PromptOption) *PromptChat {
+func NewPromptChat(name string, version Version, messages []PromptChatMessage, opts ...PromptOption) *PromptChat {
 	var cfg promptConfig
 	cfg.renderer = defaultRenderer
 	for _, opt := range opts {
@@ -94,14 +99,24 @@ func NewPromptChat(name string, version Version, content string, role PromptRole
 			name:       name,
 			version:    version,
 			promptType: PromptTypeChat,
-			content:    content,
 			renderer:   cfg.renderer,
 		},
-		Role: role,
+		messages: messages,
 	}
 }
 
-type PromptTemplate interface {
-	String() string
-	Render()
+func (p *PromptChat) RawMessagesTemplate() []PromptChatMessage {
+	return p.messages
+}
+
+func (p *PromptChat) Render(parms map[string]any) ([]PromptChatMessage, error) {
+	var rendered []PromptChatMessage
+	for _, msg := range p.messages {
+		renderedMsg, err := p.renderer.Render(msg.Content, parms)
+		if err != nil {
+			return nil, err
+		}
+		rendered = append(rendered, PromptChatMessage{Role: msg.Role, Content: renderedMsg})
+	}
+	return rendered, nil
 }

@@ -56,14 +56,16 @@ func TestPromptRegistry_Get(t *testing.T) {
 
 		// When
 		prompt, err := registry.Get("python_dev_system", mlflow.VersionLatest)
+		res, ok := prompt.(*mlflow.PromptText)
+		require.True(t, ok)
 
 		// Then
 		require.NoError(t, err)
 		assert.NotNil(t, prompt)
 		assert.Equal(t, "python_dev_system", prompt.Name())
 		assert.Equal(t, mlflow.Version("1"), prompt.Version())
-		assert.Contains(t, prompt.String(), "You are a senior python developer.")
-		assert.Contains(t, prompt.String(), "clean architecture principles")
+		assert.Contains(t, res.RawTextTemplate(), "You are a senior python developer.")
+		assert.Contains(t, res.RawTextTemplate(), "clean architecture principles")
 		assert.Equal(t, mlflow.PromptTypeText, prompt.Type())
 	})
 
@@ -110,12 +112,14 @@ func TestPromptRegistry_Get(t *testing.T) {
 
 		// When
 		prompt, err := registry.Get("python_dev_system", "2")
+		res, ok := prompt.(*mlflow.PromptText)
+		require.True(t, ok)
 
 		// Then
 		require.NoError(t, err)
 		assert.Equal(t, mlflow.Version("2"), prompt.Version())
 		assert.Equal(t, "python_dev_system", prompt.Name())
-		assert.Contains(t, prompt.String(), "review your code and refactor it")
+		assert.Contains(t, res.RawTextTemplate(), "review your code and refactor it")
 		assert.Equal(t, mlflow.PromptTypeText, prompt.Type())
 	})
 
@@ -167,8 +171,18 @@ func TestPromptRegistry_Get(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, mlflow.Version("1"), prompt.Version())
 		assert.Equal(t, "python_dev_chat", prompt.Name())
-		assert.Contains(t, prompt.String(), "review your code and refactor it")
 		assert.Equal(t, mlflow.PromptTypeChat, prompt.Type())
+		res, ok := prompt.(*mlflow.PromptChat)
+		assert.True(t, ok)
+
+		msgs := res.RawMessagesTemplate()
+		assert.Len(t, msgs, 2)
+
+		assert.Equal(t, mlflow.PromptRoleSystem, msgs[0].Role)
+		assert.Contains(t, msgs[0].Content, "following the clean architecture principles")
+
+		assert.Equal(t, mlflow.PromptRoleUser, msgs[1].Role)
+		assert.Contains(t, msgs[1].Content, "Write a simple and nice tkinter application in a single file named main.py")
 	})
 
 	t.Run("should return error if version not found", func(t *testing.T) {

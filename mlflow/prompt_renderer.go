@@ -1,6 +1,9 @@
 package mlflow
 
-import "fmt"
+import (
+	"fmt"
+	"regexp"
+)
 
 type PromptRenderer interface {
 	Render(raw string, params map[string]any) (string, error)
@@ -15,13 +18,40 @@ var (
 
 type simpleFormatRenderer struct{}
 
+var rePlaceholder = regexp.MustCompile(`{{\s*([\w.]+)\s*}}`)
+
 func (r *simpleFormatRenderer) Render(raw string, params map[string]any) (string, error) {
 	if params == nil {
 		return raw, nil
 	}
-	// replace {{...}} with coresponding parameters.
-	// no nested map allowed
-	return fmt.Sprintf(raw, params), nil
+
+	for key, val := range params {
+		if _, ok := val.(map[string]any); ok {
+			return "", fmt.Errorf("nested parameters are not supported: %s", key)
+		}
+	}
+
+	var renderErr error
+	result := rePlaceholder.ReplaceAllStringFunc(raw, func(match string) string {
+		if renderErr != nil {
+			return match
+		}
+
+		key := rePlaceholder.FindStringSubmatch(match)[1]
+
+		if val, ok := params[key]; ok {
+			return fmt.Sprintf("%v", val)
+		}
+
+		renderErr = fmt.Errorf("missing parameter: %s", key)
+		return match
+	})
+
+	if renderErr != nil {
+		return "", renderErr
+	}
+
+	return result, nil
 }
 
 type rawRenderer struct{}

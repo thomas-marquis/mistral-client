@@ -109,7 +109,6 @@ func (r *promptRegistryImpl) Get(name string, version Version) (Prompt, error) {
 	for _, tag := range wrapper.ModelVersion.Tags {
 		if tag.Key == "mlflow.prompt.text" {
 			content = tag.Value
-			break
 		}
 		if tag.Key == "_mlflow_prompt_type" {
 			promptType = tag.Value
@@ -121,7 +120,11 @@ func (r *promptRegistryImpl) Get(name string, version Version) (Prompt, error) {
 	case "text":
 		prompt = NewPromptText(name, Version(wrapper.ModelVersion.Version), content)
 	case "chat":
-		prompt = NewPromptChat(name, Version(wrapper.ModelVersion.Version), content)
+		var messages []PromptChatMessage
+		if err := json.Unmarshal([]byte(content), &messages); err != nil {
+			return nil, err
+		}
+		prompt = NewPromptChat(name, Version(wrapper.ModelVersion.Version), messages)
 	default:
 		return nil, fmt.Errorf("unsupported prompt type: %s", promptType)
 	}
