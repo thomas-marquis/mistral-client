@@ -5,6 +5,7 @@ import "context"
 type promptConfig struct {
 	renderer PromptRenderer
 	ctx      context.Context
+	headers  map[string]string
 }
 
 type PromptOption func(*promptConfig)
@@ -45,8 +46,9 @@ func WithGoTemplateRenderer() PromptOption {
 	}
 }
 
-func WithContext(ctx context.Context) PromptOption {
+// WithHeaders sets custom headers for HTTP requests.
+func WithHeaders(headers map[string]string) PromptOption {
 	return func(cfg *promptConfig) {
-		cfg.ctx = ctx
+		cfg.headers = headers
 	}
 }

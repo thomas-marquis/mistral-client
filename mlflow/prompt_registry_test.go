@@ -1,17 +1,49 @@
 package mlflow_test
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/thomas-marquis/mistral-client/mlflow"
 )
+
+// timeoutNetError implements net.Error with Timeout() = true
+type timeoutNetError struct{}
+
+func (timeoutNetError) Error() string   { return "timeout" }
+func (timeoutNetError) Timeout() bool   { return true }
+func (timeoutNetError) Temporary() bool { return true } // for legacy checks
+
+// flakyRoundTripper fails with a timeout once, then returns a successful response.
+type flakyRoundTripper struct {
+	failuresLeft int32
+	successBody  []byte
+}
+
+func (f *flakyRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	if atomic.AddInt32(&f.failuresLeft, -1) >= 0 {
+		return nil, timeoutNetError{}
+	}
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Status:     "200 OK",
+		Header:     make(http.Header),
+		Body:       io.NopCloser(bytes.NewReader(f.successBody)),
+		Request:    req,
+	}
+	resp.Header.Set("Content-Type", "application/json")
+	return resp, nil
+}
 
 func TestNewPromptRegistry(t *testing.T) {
 	t.Run("should return an error if server is unreachable", func(t *testing.T) {
@@ -352,5 +384,140 @@ func TestPromptRegistry_Get(t *testing.T) {
 		assert.Equal(t, http.StatusNotFound, apiErr.StatusCode)
 		assert.Equal(t, "RESOURCE_DOES_NOT_EXIST", apiErr.ErrorCode)
 		assert.Contains(t, apiErr.Message, "Model Version (name=no_exists, version=2) not found")
+	})
+
+	t.Run("Should retry on 5xx then succeed", func(t *testing.T) {
+		// Given
+		var attempts int32
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/health" {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+			atomic.AddInt32(&attempts, 1)
+			if atomic.LoadInt32(&attempts) <= 2 {
+				http.Error(w, `{"error_code":"INTERNAL_ERROR","message":"temporary"}`, http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{
+				"model_version": {
+					"name": "retry_model",
+					"version": "1",
+					"tags": [{"key": "mlflow.prompt.text", "value": "success after retry"}, {"key": "_mlflow_prompt_type", "value": "text"}]
+				}
+			}`))
+		}))
+		defer srv.Close()
+
+		registry, err := mlflow.NewPromptRegistry(srv.URL,
+			mlflow.WithRetry(3, 1*time.Millisecond, 5*time.Millisecond),
+		)
+		require.NoError(t, err)
+
+		// When
+		prompt, err := registry.Get(context.Background(), "retry_model", "1")
+
+		// Then
+		assert.NoError(t, err)
+		assert.NotNil(t, prompt)
+		assert.Equal(t, "success after retry", prompt.(*mlflow.PromptText).RawTextTemplate())
+		assert.Equal(t, int32(3), atomic.LoadInt32(&attempts))
+	})
+
+	t.Run("Should not retry on 404 and fail immediately", func(t *testing.T) {
+		// Given
+		var attempts int32
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/health" {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+			atomic.AddInt32(&attempts, 1)
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{
+				"error_code": "RESOURCE_DOES_NOT_EXIST",
+				"message": "not found"
+			}`))
+		}))
+		defer srv.Close()
+
+		registry, err := mlflow.NewPromptRegistry(srv.URL,
+			mlflow.WithRetry(5, 1*time.Millisecond, 2*time.Millisecond),
+		)
+		require.NoError(t, err)
+
+		// When
+		_, err = registry.Get(context.Background(), "not_found_model", "1")
+
+		// Then
+		assert.Error(t, err)
+		var apiErr *mlflow.APIError
+		assert.ErrorAs(t, err, &apiErr)
+		assert.Equal(t, int32(1), atomic.LoadInt32(&attempts))
+		assert.Equal(t, http.StatusNotFound, apiErr.StatusCode)
+	})
+
+	t.Run("Should retry on timeout error then succeed", func(t *testing.T) {
+		// Given
+		successJSON := []byte(`{
+			"model_version": {
+				"name": "timeout_model",
+				"version": "1",
+				"tags": [{"key": "mlflow.prompt.text", "value": "OK after timeout"}, {"key": "_mlflow_prompt_type", "value": "text"}]
+			}
+		}`)
+
+		// We need to bypass health check or make it succeed
+		healthSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer healthSrv.Close()
+
+		registry, err := mlflow.NewPromptRegistry(healthSrv.URL,
+			mlflow.WithRetry(3, 1*time.Millisecond, 5*time.Millisecond),
+			mlflow.WithHttpClient(&http.Client{
+				Transport: &flakyRoundTripper{
+					failuresLeft: 1,
+					successBody:  successJSON,
+				},
+			}),
+		)
+		require.NoError(t, err)
+
+		// When
+		prompt, err := registry.Get(context.Background(), "timeout_model", "1")
+
+		// Then
+		assert.NoError(t, err)
+		assert.NotNil(t, prompt)
+		assert.Equal(t, "OK after timeout", prompt.(*mlflow.PromptText).RawTextTemplate())
+	})
+
+	t.Run("Should fail when max retries reached", func(t *testing.T) {
+		// Given
+		var attempts int32
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/health" {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+			atomic.AddInt32(&attempts, 1)
+			http.Error(w, `{"error_code":"UNAVAILABLE","message":"unavailable"}`, http.StatusServiceUnavailable)
+		}))
+		defer srv.Close()
+
+		registry, err := mlflow.NewPromptRegistry(srv.URL,
+			mlflow.WithRetry(2, 1*time.Millisecond, 2*time.Millisecond),
+		)
+		require.NoError(t, err)
+
+		// When
+		_, err = registry.Get(context.Background(), "fail_model", "1")
+
+		// Then
+		assert.Error(t, err)
+		assert.Equal(t, int32(3), atomic.LoadInt32(&attempts))
 	})
 }

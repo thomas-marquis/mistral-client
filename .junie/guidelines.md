@@ -6,6 +6,10 @@
 
 **Package mlflow**: contains the code for the MLflow's prompt registry HTTP client. This package MUST NOT import the `mistral` package.
 
+## Best practices
+
+- Always start by writing one or more test cases, and then, implement the code.
+
 ## Testing Guidelines
 
 - Use `testing` with `testify/assert` and `testify/require`; reserve `require` for setup preconditions, then use `assert` for expectations.

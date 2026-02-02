@@ -3,12 +3,16 @@ package mlflow
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
+	"time"
+
+	"github.com/thomas-marquis/mistral-client/internal/shared"
 )
 
 var (
@@ -44,6 +48,8 @@ type promptRegistryImpl struct {
 	mlflowUrl  string
 	verbose    bool
 	httpClient *http.Client
+
+	reqConfig shared.RequestConfig
 }
 
 type PromptRegistryOption func(*promptRegistryImpl)
@@ -60,10 +66,30 @@ func WithHttpClient(client *http.Client) PromptRegistryOption {
 	}
 }
 
+func WithRetry(maxRetries int, waitMin, waitMax time.Duration) PromptRegistryOption {
+	return func(r *promptRegistryImpl) {
+		r.reqConfig.RetryMaxRetries = maxRetries
+		r.reqConfig.RetryWaitMin = waitMin
+		r.reqConfig.RetryWaitMax = waitMax
+	}
+}
+
 func NewPromptRegistry(mlflowUrl string, opts ...PromptRegistryOption) (PromptRegistry, error) {
 	r := &promptRegistryImpl{
 		mlflowUrl:  strings.TrimSuffix(mlflowUrl, "/"),
 		httpClient: http.DefaultClient,
+		reqConfig: shared.RequestConfig{
+			RetryMaxRetries: 3,
+			RetryWaitMin:    200 * time.Millisecond,
+			RetryWaitMax:    1 * time.Second,
+			RetryStatusCodes: map[int]struct{}{
+				http.StatusInternalServerError: {},
+				http.StatusBadGateway:          {},
+				http.StatusServiceUnavailable:  {},
+				http.StatusGatewayTimeout:      {},
+			},
+			Verbose: false,
+		},
 	}
 
 	res, err := r.httpClient.Get(fmt.Sprintf("%s/health", r.mlflowUrl))
@@ -83,9 +109,7 @@ func NewPromptRegistry(mlflowUrl string, opts ...PromptRegistryOption) (PromptRe
 	return r, nil
 }
 
-func (r *promptRegistryImpl) Get(_ context.Context, name string, version Version, opts ...PromptOption) (Prompt, error) {
-	// TODO: use context to cancel request
-	// TODO: handle retries and timeout
+func (r *promptRegistryImpl) Get(ctx context.Context, name string, version Version, opts ...PromptOption) (Prompt, error) {
 	if version == "" {
 		version = VersionLatest
 	}
@@ -106,20 +130,30 @@ func (r *promptRegistryImpl) Get(_ context.Context, name string, version Version
 		logger.Printf("Getting prompt %s (version: %s) from %s", name, version, epUrl)
 	}
 
-	resp, err := r.httpClient.Get(epUrl)
+	var cfg promptConfig
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+
+	resp, _, err := shared.SendRequest(ctx, r.httpClient, http.MethodGet, epUrl, nil, cfg.headers, r.reqConfig)
 	if err != nil {
+		var sharedApiErr shared.ApiError
+		if errors.As(err, &sharedApiErr) {
+			var apiErr APIError
+			apiErr.StatusCode = sharedApiErr.StatusCode
+			if sharedApiErr.Content != nil {
+				if errorCode, ok := sharedApiErr.Content["error_code"]; ok {
+					apiErr.ErrorCode = errorCode.(string)
+				}
+				if message, ok := sharedApiErr.Content["message"]; ok {
+					apiErr.Message = message.(string)
+				}
+			}
+			return nil, &apiErr
+		}
 		return nil, fmt.Errorf("failed to get registered model: %w", err)
 	}
 	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		var apiErr APIError
-		apiErr.StatusCode = resp.StatusCode
-		if err := json.NewDecoder(resp.Body).Decode(&apiErr); err != nil {
-			return nil, fmt.Errorf("mlflow api returned status %d", resp.StatusCode)
-		}
-		return nil, &apiErr
-	}
 
 	var wrapper struct {
 		ModelVersion modelVersion `json:"model_version"`

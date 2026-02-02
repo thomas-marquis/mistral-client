@@ -67,11 +67,17 @@ func New(apiKey string, opts ...Option) Client {
 			Timeout: defaultTimeout,
 		},
 		reqConfig: shared.RequestConfig{
-			Verbose:          false,
-			RetryMaxRetries:  3,
-			RetryWaitMin:     200 * time.Millisecond,
-			RetryWaitMax:     1 * time.Second,
-			RetryStatusCodes: make(map[int]struct{}),
+			Verbose:         false,
+			RetryMaxRetries: 3,
+			RetryWaitMin:    200 * time.Millisecond,
+			RetryWaitMax:    1 * time.Second,
+			RetryStatusCodes: map[int]struct{}{
+				http.StatusTooManyRequests:     {},
+				http.StatusInternalServerError: {},
+				http.StatusBadGateway:          {},
+				http.StatusServiceUnavailable:  {},
+				http.StatusGatewayTimeout:      {},
+			},
 		},
 
 		cacheConfig: cacheConfig{cacheDir: DefaultCacheDir, enabled: false},
@@ -79,16 +85,6 @@ func New(apiKey string, opts ...Option) Client {
 			"Content-Type":  "application/json; charset=utf-8",
 			"Authorization": "Bearer " + apiKey,
 		},
-	}
-
-	for _, code := range []int{
-		http.StatusTooManyRequests,
-		http.StatusInternalServerError,
-		http.StatusBadGateway,
-		http.StatusServiceUnavailable,
-		http.StatusGatewayTimeout,
-	} {
-		c.reqConfig.RetryStatusCodes[code] = struct{}{}
 	}
 
 	for _, opt := range opts {
