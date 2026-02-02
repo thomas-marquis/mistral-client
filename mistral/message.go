@@ -1,6 +1,7 @@
 package mistral
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -309,6 +310,49 @@ func mapToMessage(data map[string]any) (ChatMessage, error) {
 	}
 }
 
-func MessagesFromRegisteredPrompt(registry mlflow.PromptRegistry) ([]ChatMessage, error) {
+func MessagesFromRegisteredPrompt(
+	ctx context.Context,
+	registry mlflow.PromptRegistry,
+	promptName string,
+	promptVersion mlflow.Version,
+	templateParams map[string]any,
+	opts ...mlflow.PromptOption,
+) ([]ChatMessage, error) {
+	prompt, err := registry.Get(ctx, promptName, promptVersion, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	switch prompt.Type() {
+	case mlflow.PromptTypeText:
+		p, _ := prompt.(*mlflow.PromptText)
+		content, err := p.Render(templateParams)
+		if err != nil {
+			return nil, err
+		}
+		return []ChatMessage{NewUserMessageFromString(content)}, nil
+	case mlflow.PromptTypeChat:
+		p, _ := prompt.(*mlflow.PromptChat)
+		renderedMsg, err := p.Render(templateParams)
+		if err != nil {
+			return nil, err
+		}
+		var messages []ChatMessage
+		for _, msg := range renderedMsg {
+			switch msg.Role {
+			case mlflow.PromptRoleSystem:
+				messages = append(messages, NewSystemMessageFromString(msg.Content))
+			case mlflow.PromptRoleUser:
+				messages = append(messages, NewUserMessageFromString(msg.Content))
+			case mlflow.PromptRoleAssistant:
+				messages = append(messages, NewAssistantMessageFromString(msg.Content))
+			default:
+				return nil, fmt.Errorf("unsupported role: %s", msg.Role)
+			}
+		}
+
+		return messages, nil
+	}
+
 	return nil, nil
 }

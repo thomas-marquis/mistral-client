@@ -1,7 +1,10 @@
 package mlflow
 
+import "context"
+
 type promptConfig struct {
 	renderer PromptRenderer
+	ctx      context.Context
 }
 
 type PromptOption func(*promptConfig)
@@ -39,5 +42,11 @@ func WithRawRenderer() PromptOption {
 func WithGoTemplateRenderer() PromptOption {
 	return func(cfg *promptConfig) {
 		cfg.renderer = &goTemplateRenderer{}
+	}
+}
+
+func WithContext(ctx context.Context) PromptOption {
+	return func(cfg *promptConfig) {
+		cfg.ctx = ctx
 	}
 }

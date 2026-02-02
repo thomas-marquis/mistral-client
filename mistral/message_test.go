@@ -1,11 +1,16 @@
 package mistral_test
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/thomas-marquis/mistral-client/mistral"
+	"github.com/thomas-marquis/mistral-client/mlflow"
+	"github.com/thomas-marquis/mistral-client/mocks"
+	"go.uber.org/mock/gomock"
 )
 
 func TestSystemMessage(t *testing.T) {
@@ -308,5 +313,131 @@ func TestToolMessage(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, `{"role":"tool","content":[{"type":"text","text":"hello"},{"type":"thinking","closed":true,"thinking":[{"type":"text","text":"world"}]}],"name":"testFunction","tool_call_id":"azerty"}`, string(j))
+	})
+}
+
+func TestMessagesFromRegisteredPrompt(t *testing.T) {
+	t.Run("should return a rendered single user message when the prompt is a text", func(t *testing.T) {
+		// Given
+		ctrl := gomock.NewController(t)
+		mockRegistry := mocks.NewMockPromptRegistry(ctrl)
+
+		fakePrompt := mlflow.NewPromptText("my_prompt", mlflow.VersionLatest, "Say {{message}}")
+
+		mockRegistry.EXPECT().
+			Get(gomock.AssignableToTypeOf(ctxType), gomock.Eq("my_prompt"), gomock.Eq(mlflow.VersionLatest)).
+			Return(fakePrompt, nil).
+			Times(1)
+
+		// When
+		res, err := mistral.MessagesFromRegisteredPrompt(context.TODO(),
+			mockRegistry, "my_prompt", mlflow.VersionLatest,
+			map[string]any{"message": "hello"})
+
+		// Then
+		assert.NoError(t, err)
+		assert.Len(t, res, 1)
+		assert.Equal(t, mistral.RoleUser, res[0].Role())
+		assert.Equal(t, "Say hello", res[0].Content().String())
+	})
+
+	t.Run("should return a rendered all messages when the prompt is a chat", func(t *testing.T) {
+		// Given
+		ctrl := gomock.NewController(t)
+		mockRegistry := mocks.NewMockPromptRegistry(ctrl)
+
+		fakePrompt := mlflow.NewPromptChat("my_prompt", mlflow.VersionLatest,
+			[]mlflow.PromptChatMessage{
+				{Role: mlflow.PromptRoleUser, Content: "You are an experienced {{occupation}}"},
+				{Role: mlflow.PromptRoleAssistant, Content: "Please answer this question: {{question}}"},
+			})
+
+		mockRegistry.EXPECT().
+			Get(gomock.AssignableToTypeOf(ctxType), gomock.Eq("my_prompt"), gomock.Eq(mlflow.VersionLatest)).
+			Return(fakePrompt, nil).
+			Times(1)
+
+		// When
+		res, err := mistral.MessagesFromRegisteredPrompt(context.TODO(),
+			mockRegistry, "my_prompt", mlflow.VersionLatest,
+			map[string]any{"occupation": "writer", "question": "What is your favourite book?"})
+
+		// Then
+		assert.NoError(t, err)
+		assert.Len(t, res, 2)
+
+		assert.Equal(t, mistral.RoleUser, res[0].Role())
+		assert.Equal(t, "You are an experienced writer", res[0].Content().String())
+
+		assert.Equal(t, mistral.RoleAssistant, res[1].Role())
+		assert.Equal(t, "Please answer this question: What is your favourite book?", res[1].Content().String())
+	})
+
+	t.Run("should return an error when prompt registry returns an error", func(t *testing.T) {
+		// Given
+		ctrl := gomock.NewController(t)
+		mockRegistry := mocks.NewMockPromptRegistry(ctrl)
+
+		fakeErr := errors.New("fake error")
+
+		mockRegistry.EXPECT().
+			Get(gomock.AssignableToTypeOf(ctxType), gomock.Eq("my_prompt"), gomock.Eq(mlflow.VersionLatest)).
+			Return(nil, fakeErr).
+			Times(1)
+
+		// When
+		_, err := mistral.MessagesFromRegisteredPrompt(context.TODO(), mockRegistry, "my_prompt", mlflow.VersionLatest, nil)
+
+		// Then
+		assert.Equal(t, fakeErr, err)
+	})
+
+	t.Run("should return an error when text prompt rendering fails", func(t *testing.T) {
+		// Given
+		ctrl := gomock.NewController(t)
+		mockRegistry := mocks.NewMockPromptRegistry(ctrl)
+
+		fakePrompt := mlflow.NewPromptText("my_prompt", mlflow.VersionLatest, "Say {{message}}")
+
+		mockRegistry.EXPECT().
+			Get(gomock.AssignableToTypeOf(ctxType), gomock.Eq("my_prompt"), gomock.Eq(mlflow.VersionLatest)).
+			Return(fakePrompt, nil).
+			Times(1)
+
+		// When
+		// Missing "message" parameter should trigger a rendering error
+		_, err := mistral.MessagesFromRegisteredPrompt(context.TODO(),
+			mockRegistry, "my_prompt", mlflow.VersionLatest,
+			map[string]any{})
+
+		// Then
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "missing parameter: message")
+	})
+
+	t.Run("should return an error when chat prompt rendering fails", func(t *testing.T) {
+		// Given
+		ctrl := gomock.NewController(t)
+		mockRegistry := mocks.NewMockPromptRegistry(ctrl)
+
+		fakePrompt := mlflow.NewPromptChat("my_prompt", mlflow.VersionLatest,
+			[]mlflow.PromptChatMessage{
+				{Role: mlflow.PromptRoleUser, Content: "Hello {{name}}"},
+			})
+
+		mockRegistry.EXPECT().
+			Get(gomock.AssignableToTypeOf(ctxType), gomock.Eq("my_prompt"), gomock.Eq(mlflow.VersionLatest)).
+			Return(fakePrompt, nil).
+			Times(1)
+
+		// When
+		// Missing "name" parameter should trigger a rendering error
+		_, err := mistral.MessagesFromRegisteredPrompt(context.TODO(),
+			mockRegistry, "my_prompt", mlflow.VersionLatest,
+			map[string]any{})
+
+		// Then
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "missing parameter: name")
 	})
 }

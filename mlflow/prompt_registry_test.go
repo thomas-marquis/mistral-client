@@ -1,6 +1,7 @@
 package mlflow_test
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -10,6 +11,32 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/thomas-marquis/mistral-client/mlflow"
 )
+
+func TestNewPromptRegistry(t *testing.T) {
+	t.Run("should return an error if server is unreachable", func(t *testing.T) {
+		// When
+		_, err := mlflow.NewPromptRegistry("http://localhost:26829")
+
+		// Then
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "connection refused")
+	})
+
+	t.Run("should return an error if server is not healthy", func(t *testing.T) {
+		// Given
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusServiceUnavailable)
+		}))
+		defer server.Close()
+
+		// When
+		_, err := mlflow.NewPromptRegistry(server.URL)
+
+		// Then
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "mlflow server is not healthy: 503")
+	})
+}
 
 func TestPromptRegistry_Get(t *testing.T) {
 	t.Run("should successfully get a prompt with latest version", func(t *testing.T) {
@@ -44,6 +71,10 @@ func TestPromptRegistry_Get(t *testing.T) {
 			}
 		}`
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/health" {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
 			assert.Equal(t, "/api/2.0/mlflow/registered-models/alias", r.URL.Path)
 			assert.Equal(t, "python_dev_system", r.URL.Query().Get("name"))
 			assert.Equal(t, "latest", r.URL.Query().Get("alias"))
@@ -52,10 +83,11 @@ func TestPromptRegistry_Get(t *testing.T) {
 		}))
 		defer server.Close()
 
-		registry := mlflow.NewPromptRegistry(server.URL)
+		registry, err := mlflow.NewPromptRegistry(server.URL)
+		require.NoError(t, err)
 
 		// When
-		prompt, err := registry.Get("python_dev_system", mlflow.VersionLatest)
+		prompt, err := registry.Get(context.TODO(), "python_dev_system", mlflow.VersionLatest)
 		res, ok := prompt.(*mlflow.PromptText)
 		require.True(t, ok)
 
@@ -100,6 +132,10 @@ func TestPromptRegistry_Get(t *testing.T) {
 			}
 		}`
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/health" {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
 			assert.Equal(t, "/api/2.0/mlflow/model-versions/get", r.URL.Path)
 			assert.Equal(t, "python_dev_system", r.URL.Query().Get("name"))
 			assert.Equal(t, "2", r.URL.Query().Get("version"))
@@ -108,10 +144,11 @@ func TestPromptRegistry_Get(t *testing.T) {
 		}))
 		defer server.Close()
 
-		registry := mlflow.NewPromptRegistry(server.URL)
+		registry, err := mlflow.NewPromptRegistry(server.URL)
+		require.NoError(t, err)
 
 		// When
-		prompt, err := registry.Get("python_dev_system", "2")
+		prompt, err := registry.Get(context.TODO(), "python_dev_system", "2")
 		res, ok := prompt.(*mlflow.PromptText)
 		require.True(t, ok)
 
@@ -154,6 +191,10 @@ func TestPromptRegistry_Get(t *testing.T) {
 			}
 		}`
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/health" {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
 			assert.Equal(t, "/api/2.0/mlflow/model-versions/get", r.URL.Path)
 			assert.Equal(t, "python_dev_chat", r.URL.Query().Get("name"))
 			assert.Equal(t, "1", r.URL.Query().Get("version"))
@@ -162,10 +203,11 @@ func TestPromptRegistry_Get(t *testing.T) {
 		}))
 		defer server.Close()
 
-		registry := mlflow.NewPromptRegistry(server.URL)
+		registry, err := mlflow.NewPromptRegistry(server.URL)
+		require.NoError(t, err)
 
 		// When
-		prompt, err := registry.Get("python_dev_chat", "1")
+		prompt, err := registry.Get(context.TODO(), "python_dev_chat", "1")
 
 		// Then
 		require.NoError(t, err)
@@ -192,15 +234,20 @@ func TestPromptRegistry_Get(t *testing.T) {
 			"message": "Model Version (name=python_dev_system, version=3) not found"
 		}`
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/health" {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
 			w.WriteHeader(http.StatusNotFound)
 			_, _ = fmt.Fprintln(w, mockResponse)
 		}))
 		defer server.Close()
 
-		registry := mlflow.NewPromptRegistry(server.URL)
+		registry, err := mlflow.NewPromptRegistry(server.URL)
+		require.NoError(t, err)
 
 		// When
-		prompt, err := registry.Get("python_dev_system", "3")
+		prompt, err := registry.Get(context.TODO(), "python_dev_system", "3")
 
 		// Then
 		assert.Error(t, err)
@@ -220,15 +267,20 @@ func TestPromptRegistry_Get(t *testing.T) {
 			"message": "Model Version (name=no_exists, version=2) not found"
 		}`
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/health" {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
 			w.WriteHeader(http.StatusNotFound)
 			_, _ = fmt.Fprintln(w, mockResponse)
 		}))
 		defer server.Close()
 
-		registry := mlflow.NewPromptRegistry(server.URL)
+		registry, err := mlflow.NewPromptRegistry(server.URL)
+		require.NoError(t, err)
 
 		// When
-		prompt, err := registry.Get("no_exists", "2")
+		prompt, err := registry.Get(context.TODO(), "no_exists", "2")
 
 		// Then
 		assert.Error(t, err)

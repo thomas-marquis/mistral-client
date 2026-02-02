@@ -1,6 +1,7 @@
 package mlflow
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -25,7 +26,7 @@ const (
 )
 
 type PromptRegistry interface {
-	Get(name string, version Version) (Prompt, error)
+	Get(ctx context.Context, name string, version Version, opts ...PromptOption) (Prompt, error)
 }
 
 type promptRegistryImpl struct {
@@ -48,20 +49,32 @@ func WithHttpClient(client *http.Client) PromptRegistryOption {
 	}
 }
 
-func NewPromptRegistry(mlflowUrl string, opts ...PromptRegistryOption) PromptRegistry {
+func NewPromptRegistry(mlflowUrl string, opts ...PromptRegistryOption) (PromptRegistry, error) {
 	r := &promptRegistryImpl{
 		mlflowUrl:  strings.TrimSuffix(mlflowUrl, "/"),
 		httpClient: http.DefaultClient,
+	}
+
+	res, err := r.httpClient.Get(fmt.Sprintf("%s/health", r.mlflowUrl))
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to mlflow server: %w", err)
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("mlflow server is not healthy: %d", res.StatusCode)
 	}
 
 	for _, opt := range opts {
 		opt(r)
 	}
 
-	return r
+	return r, nil
 }
 
-func (r *promptRegistryImpl) Get(name string, version Version) (Prompt, error) {
+func (r *promptRegistryImpl) Get(_ context.Context, name string, version Version, opts ...PromptOption) (Prompt, error) {
+	// TODO: use context to cancel request
+	// TODO: handle retries and timeout
 	if version == "" {
 		version = VersionLatest
 	}
@@ -118,13 +131,13 @@ func (r *promptRegistryImpl) Get(name string, version Version) (Prompt, error) {
 	var prompt Prompt
 	switch promptType {
 	case "text":
-		prompt = NewPromptText(name, Version(wrapper.ModelVersion.Version), content)
+		prompt = NewPromptText(name, Version(wrapper.ModelVersion.Version), content, opts...)
 	case "chat":
 		var messages []PromptChatMessage
 		if err := json.Unmarshal([]byte(content), &messages); err != nil {
 			return nil, err
 		}
-		prompt = NewPromptChat(name, Version(wrapper.ModelVersion.Version), messages)
+		prompt = NewPromptChat(name, Version(wrapper.ModelVersion.Version), messages, opts...)
 	default:
 		return nil, fmt.Errorf("unsupported prompt type: %s", promptType)
 	}
