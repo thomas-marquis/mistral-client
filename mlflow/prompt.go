@@ -17,8 +17,6 @@ type Prompt interface {
 	Type() PromptType
 	Name() string
 	Version() Version
-	//String() string
-	//Render(parameters map[string]any) (string, error)
 }
 
 var (
