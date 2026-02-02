@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
+	"github.com/thomas-marquis/mistral-client/mlflow"
 )
 
 type ChatMessage interface {
@@ -305,4 +307,8 @@ func mapToMessage(data map[string]any) (ChatMessage, error) {
 	default:
 		return nil, errors.New("unsupported role")
 	}
+}
+
+func MessagesFromRegisteredPrompt(registry mlflow.PromptRegistry) ([]ChatMessage, error) {
+	return nil, nil
 }
