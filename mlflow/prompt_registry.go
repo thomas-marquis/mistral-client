@@ -16,12 +16,16 @@ var (
 
 type Version string
 
+func (v Version) String() string {
+	return string(v)
+}
+
 const (
 	VersionLatest Version = "latest"
 )
 
 type PromptRegistry interface {
-	Get(name string, version Version) (*Prompt, error)
+	Get(name string, version Version) (Prompt, error)
 }
 
 type promptRegistryImpl struct {
@@ -57,7 +61,7 @@ func NewPromptRegistry(mlflowUrl string, opts ...PromptRegistryOption) PromptReg
 	return r
 }
 
-func (r *promptRegistryImpl) Get(name string, version Version) (*Prompt, error) {
+func (r *promptRegistryImpl) Get(name string, version Version) (Prompt, error) {
 	if version == "" {
 		version = VersionLatest
 	}
@@ -67,10 +71,10 @@ func (r *promptRegistryImpl) Get(name string, version Version) (*Prompt, error) 
 
 	var epUrl string
 	if version == VersionLatest {
-		qp.Add("alias", string(VersionLatest))
+		qp.Add("alias", VersionLatest.String())
 		epUrl = fmt.Sprintf("%s/api/2.0/mlflow/registered-models/alias?%s", r.mlflowUrl, qp.Encode())
 	} else {
-		qp.Add("version", string(version))
+		qp.Add("version", version.String())
 		epUrl = fmt.Sprintf("%s/api/2.0/mlflow/model-versions/get?%s", r.mlflowUrl, qp.Encode())
 	}
 
@@ -100,17 +104,15 @@ func (r *promptRegistryImpl) Get(name string, version Version) (*Prompt, error) 
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	prompt := &Prompt{
-		Name:    wrapper.ModelVersion.Name,
-		Version: wrapper.ModelVersion.Version,
-	}
-
+	var content string
 	for _, tag := range wrapper.ModelVersion.Tags {
 		if tag.Key == "mlflow.prompt.text" {
-			prompt.Text = tag.Value
+			content = tag.Value
 			break
 		}
 	}
+
+	prompt := NewPromptText(name, Version(wrapper.ModelVersion.Version), content)
 
 	return prompt, nil
 }

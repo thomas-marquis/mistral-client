@@ -60,10 +60,10 @@ func TestPromptRegistry_Get(t *testing.T) {
 		// Then
 		require.NoError(t, err)
 		assert.NotNil(t, prompt)
-		assert.Equal(t, "python_dev_system", prompt.Name)
-		assert.Equal(t, "1", prompt.Version)
-		assert.Contains(t, prompt.Text, "You are a senior python developer.")
-		assert.Contains(t, prompt.Text, "clean architecture principles")
+		assert.Equal(t, "python_dev_system", prompt.Name())
+		assert.Equal(t, mlflow.Version("1"), prompt.Version())
+		assert.Contains(t, prompt.String(), "You are a senior python developer.")
+		assert.Contains(t, prompt.String(), "clean architecture principles")
 	})
 
 	t.Run("should successfully get a prompt with specific version", func(t *testing.T) {
@@ -112,9 +112,9 @@ func TestPromptRegistry_Get(t *testing.T) {
 
 		// Then
 		require.NoError(t, err)
-		assert.Equal(t, "2", prompt.Version)
-		assert.Equal(t, "python_dev_system", prompt.Name)
-		assert.Contains(t, prompt.Text, "review your code and refactor it")
+		assert.Equal(t, mlflow.Version("2"), prompt.Version())
+		assert.Equal(t, "python_dev_system", prompt.Name())
+		assert.Contains(t, prompt.String(), "review your code and refactor it")
 	})
 
 	t.Run("should return error if version not found", func(t *testing.T) {
