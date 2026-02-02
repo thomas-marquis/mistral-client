@@ -96,7 +96,7 @@ func NewPromptRegistry(mlflowUrl string, opts ...PromptRegistryOption) (PromptRe
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to mlflow server: %w", err)
 	}
-	defer res.Body.Close()
+	defer res.Body.Close() //nolint:errcheck
 
 	if res.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("mlflow server is not healthy: %d", res.StatusCode)
@@ -153,7 +153,7 @@ func (r *promptRegistryImpl) Get(ctx context.Context, name string, version Versi
 		}
 		return nil, fmt.Errorf("failed to get registered model: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	var wrapper struct {
 		ModelVersion modelVersion `json:"model_version"`

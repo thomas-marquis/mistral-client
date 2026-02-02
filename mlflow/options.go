@@ -1,10 +1,7 @@
 package mlflow
 
-import "context"
-
 type promptConfig struct {
 	renderer PromptRenderer
-	ctx      context.Context
 	headers  map[string]string
 }
 
