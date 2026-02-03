@@ -20,22 +20,21 @@ go get github.com/thomas-marquis/mistral-client
 
 **Basic features:**
 
-- **Chat Completion**: Synchronous and streaming support.
-- **Embeddings**: Generate text embeddings with various encoding formats and dimensions.
-- **Tool Calling**: Native support for function calling and tool usage.
-- **Multi-modal Input**: Handle images, audio, and documents in your messages.
-- **Structured Output**: Support for JSON Mode and JSON Schema.
-- **Advanced Client**: Built-in retry logic, rate limiting, and custom HTTP client configuration.
-- **Model Management**: List, search, and retrieve details for Mistral models.
-- **MLflow integration**: Get your prompts from MLflow Prompt Registry instead of writing them in your code.
+- [**Chat Completion**](./basic-usage/chat-completion.md): Synchronous and streaming support.
+- [**Embeddings**](./basic-usage/embed.md): Generate text embeddings with various encoding formats and dimensions.
+- [**Tool Calling**](./basic-usage/tool-calling.md): Native support for function calling and tool usage.
+- [**Multi-modal Input**](./advanced-usage/complex-input.md): Handle images, audio, and documents in your messages.
+- [**Structured Output**](./basic-usage/structured.md): Support for JSON Mode and JSON Schema.
+- [**Advanced Client**](./advanced-usage/rate-limiting.md): Built-in retry logic, rate limiting, and custom HTTP client configuration.
+- [**Model Management**](./basic-usage/models.md): List, search, and retrieve details for Mistral models.
 
 **What makes a difference:**
 
-- **Caching**: Cache responses to avoid unnecessary repeated API calls (e.g. for local development runs).
+- [**Caching**](./basic-usage/caching.md): Cache responses to avoid unnecessary repeated API calls (e.g. for local development runs).
+- [**MLflow integration**](./advanced-usage/mlflow.md): Get your prompts from MLflow Prompt Registry instead of writing them in your code.
 
 **Coming soon:**
 
-- **MLflow integration**: Store your prompts on MLfow Prompt Registry and get them back for reuse.
 - **Fake models**: Use fake models for local development and testing.
 
 ## Getting Started

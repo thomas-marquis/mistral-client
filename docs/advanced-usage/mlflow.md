@@ -18,6 +18,10 @@ That means you can store your prompts on MLflow and use them in your Go code sea
     - [Chat completion with MLflow integration](https://github.com/thomas-marquis/mistral-client/tree/main/examples/chat-completion-mlflow/main.go)
     - [Prompt rendering with Go templates](https://github.com/thomas-marquis/mistral-client/tree/main/examples/mlflow-prompts-go-template/main.go)
 
+!!! note
+
+    This feature has been tested with **MLflow 3.9.0**.
+
 ## Setup
 
 These features are located in the `mistral-client`'s `mlflow` package.
@@ -43,8 +47,6 @@ Some options are available to customize the registry:
 
 Please refer to the [MLflow documentation](https://mlflow.org/docs/latest/genai/prompt-registry/) to learn how to create a prompt.
 This process may change depending on your MLflow version.
-
-This library has been tested with **MLflow 3.9.0**.
 
 MLflow lets you define two types of prompts:
 
